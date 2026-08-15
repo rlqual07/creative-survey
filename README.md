@@ -1,134 +1,132 @@
-# Creative Survey Platform
+# Creative Survey Platform - Free Version (Heroku + SQLite)
 
-A block-randomized research survey platform for online data collection. Supports image/video stimuli with configurable question sets.
+A completely free survey platform using Heroku (free tier) + SQLite database. **No credit card required.**
 
 ## Features
 
-- ✅ Admin dashboard to configure survey content
-- ✅ Block-level randomization (4 stimulus blocks in random order)
-- ✅ Support for image and video stimuli
-- ✅ Consent form management
-- ✅ Demographic questions
-- ✅ Real-time response collection
-- ✅ Results dashboard
-- ✅ Export survey data (CSV/JSON)
-
-## Survey Flow
-
-```
-Consent Form
-    ↓
-[Block 1-4 in Random Order]
-├─ Stimulus (image/video)
-├─ Question Set 1 (8 items)
-└─ Question Set 2 (10 items)
-    ↓
-Demographics (4 items)
-    ↓
-Thank You
-```
+✅ **Completely Free** - Heroku free tier (no credit card)  
+✅ **No Cloud Database** - SQLite (stored locally on server)  
+✅ **Browser Admin Dashboard** - Create surveys, add questions  
+✅ **Block Randomization** - Automatic random block shuffling  
+✅ **Live Results** - View responses in real-time  
+✅ **Export Data** - Download as CSV  
+✅ **Mobile Friendly** - Works on any device  
 
 ## Tech Stack
 
-- **Frontend**: React, TypeScript, Tailwind CSS
-- **Backend**: Node.js, Express, PostgreSQL
-- **Deployment**: Docker, Railway/Heroku
-- **Database**: PostgreSQL
+- **Frontend**: React + TypeScript (browser-based)
+- **Backend**: Node.js + Express (runs on Heroku free tier)
+- **Database**: SQLite3 (no external database needed)
+- **Hosting**: Heroku (free tier - no credit card)
 
-## Quick Start
+## Quick Start (10 Minutes)
 
-### Prerequisites
-- Node.js 16+
-- PostgreSQL
-- npm or yarn
+### Step 1: Clone & Install Locally
 
-### Installation
-
-1. **Clone the repository**
 ```bash
 git clone https://github.com/rlqual07/creative-survey.git
 cd creative-survey
-```
 
-2. **Backend Setup**
-```bash
-cd backend
+# Install dependencies
 npm install
-cp .env.example .env
-# Edit .env with your database credentials
-npm run migrate
+
+# Run both backend and frontend
 npm start
 ```
 
-3. **Frontend Setup**
+Open: `http://localhost:3000`
+
+### Step 2: Deploy to Heroku (Free)
+
 ```bash
-cd ../frontend
-npm install
-cp .env.example .env
-# Edit .env with backend URL
-npm start
+# Install Heroku CLI
+# https://devcenter.heroku.com/articles/heroku-cli
+
+# Login to Heroku
+heroku login
+
+# Create Heroku app
+heroku create creative-survey-yourname
+
+# Deploy
+git push heroku main
+
+# Done! Your app is live at:
+# https://creative-survey-yourname.herokuapp.com
 ```
 
-4. **Access the platform**
-- Admin Dashboard: `http://localhost:3000/admin`
-- Participant Survey: `http://localhost:3000/survey`
-- Backend API: `http://localhost:5000`
+### Step 3: Create Your Survey
 
-## Project Structure
+1. Go to: `https://creative-survey-yourname.herokuapp.com/admin`
+2. Create survey with title, description, consent form
+3. Add 4 stimulus blocks (images/videos)
+4. Add questions
+5. Publish
+
+### Step 4: Share with Participants
+
+Give them: `https://creative-survey-yourname.herokuapp.com/survey`
+
+---
+
+## Architecture
 
 ```
-creative-survey/
-├── backend/
-│   ├── src/
-│   │   ├── routes/
-│   │   │   ├── survey.js
-│   │   │   ├── questions.js
-│   │   │   └── responses.js
-│   │   ├── models/
-│   │   │   ├── Survey.js
-│   │   │   ├── Question.js
-│   │   │   └── Response.js
-│   │   ├── middleware/
-│   │   │   └── auth.js
-│   │   ├── utils/
-│   │   │   └── randomization.js
-│   │   └── server.js
-│   ├── database/
-│   │   └── schema.sql
-│   └── package.json
-├── frontend/
-│   ├── src/
-│   │   ├── pages/
-│   │   │   ├── AdminDashboard.tsx
-│   │   │   ├── SurveyFlow.tsx
-│   │   │   └── ResultsDashboard.tsx
-│   │   ├── components/
-│   │   │   ├── ConsentForm.tsx
-│   │   │   ├── StimulusBlock.tsx
-│   │   │   ├── QuestionSet.tsx
-│   │   │   └── Demographics.tsx
-│   │   └── App.tsx
-│   └── package.json
-└── README.md
+Your Browser
+     ↓
+┌─────────────────────────────────┐
+│  React Frontend (Admin + Survey) │
+│  - Create surveys               │
+│  - Take surveys                 │
+│  - View results                 │
+└─────────────────────────────────┘
+     ↓
+   HTTP API
+     ↓
+┌─────────────────────────────────┐
+│  Heroku (Free Tier)             │
+│  - Express Server               │
+│  - API Endpoints                │
+└─────────────────────────────────┘
+     ↓
+┌─────────────────────────────────┐
+│  SQLite Database (survey.db)    │
+│  - Surveys                      │
+│  - Questions                    │
+│  - Responses                    │
+│  (Stored as file on server)     │
+└─────────────────────────────────┘
 ```
 
-## Deployment
+## Database Structure
 
-See [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed instructions on deploying to Railway, Heroku, or Vercel.
+SQLite tables:
+- `surveys` - Survey metadata
+- `stimulus_blocks` - Image/video stimuli
+- `questions` - All survey questions
+- `demographic_questions` - Demographics
+- `participants` - Participant sessions
+- `responses` - Question responses
+- `demographic_responses` - Demographics responses
 
-## Data Collection
+## No Credit Card Required
 
-Survey responses are stored in PostgreSQL with the following structure:
-- Participant ID (anonymized)
-- Block randomization order
-- Responses to each question
-- Demographic data
-- Timestamp
+✅ Heroku free tier (no credit card)  
+✅ SQLite (included with Node.js)  
+✅ No external services  
+✅ No file storage fees  
+✅ Completely free to run  
 
-## License
+## Limitations (Free Tier)
 
-MIT
+- App sleeps after 30 mins of inactivity (wakes up when accessed)
+- ~100 participants is the practical limit
+- Data stored on Heroku (backed up via git)
 
 ## Support
 
-For issues or questions, please open an issue on GitHub.
+See documentation:
+- `QUICKSTART.md` - Step-by-step setup
+- `ADMIN_GUIDE.md` - How to create surveys
+- `HEROKU_SETUP.md` - Detailed Heroku deployment
+

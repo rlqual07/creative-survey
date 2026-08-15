@@ -1,191 +1,122 @@
-# Quick Start Guide
+# Quick Start (Heroku + SQLite)
 
-## 🚀 Get Started in 5 Minutes
+## 1️⃣ Install Heroku CLI
 
-### For Local Testing
+Download from: https://devcenter.heroku.com/articles/heroku-cli
+
+## 2️⃣ Deploy in 5 Commands
 
 ```bash
-# 1. Clone repository
+# Clone repository
 git clone https://github.com/rlqual07/creative-survey.git
 cd creative-survey
 
-# 2. Set up backend
-cd backend
-npm install
-cp .env.example .env
-# Edit .env with your database info
-npm run migrate
-npm run dev
+# Login to Heroku (free, no credit card)
+heroku login
 
-# 3. In another terminal, set up frontend
-cd frontend
-npm install
-npm start
+# Create app
+heroku create creative-survey-yourname
+
+# Deploy!
+git push heroku main
 ```
 
-**Now open:** http://localhost:3000
+## 3️⃣ Your App is Live!
 
----
+Open: `https://creative-survey-yourname.herokuapp.com`
 
-## 📋 How to Input Your Survey
+## 4️⃣ Create Your First Survey
 
-### Step 1: Create Survey
-1. Go to **Admin Dashboard** → http://localhost:3000/admin
-2. Click **"Create New Survey"**
+1. Go to `/admin`
+2. Click "Create New Survey"
 3. Fill in:
-   - **Title**: Your research study name
-   - **Description**: What the study is about
-   - **Consent Form**: Your full informed consent text
-4. Click **Create Survey**
+   - Title
+   - Description
+   - Consent Form
+4. Click Create
 
-### Step 2: Add Stimulus Materials
+## 5️⃣ Add Stimulus Blocks
 
-You need 4 stimulus blocks (images or videos).
+1. Click "Add Stimulus Block"
+2. Choose Block 1, 2, 3, or 4
+3. Select type: Image or Video
+4. Paste URL (use Imgur for images, YouTube for videos)
+5. Click Add
+6. **Repeat for blocks 2, 3, 4**
 
-**To prepare your stimuli:**
+## 6️⃣ Add Questions
 
-1. **For Images:**
-   - Upload to [Imgur.com](https://imgur.com) (free)
-   - Right-click image → Copy image link
-   - Save the URL
+For each block:
 
-2. **For Videos:**
-   - Upload to YouTube (unlisted)
-   - Share link: `https://youtube.com/embed/VIDEO_ID`
-   - Or use [Vimeo](https://vimeo.com)
+1. Question Set 1: Add 8 questions
+2. Question Set 2: Add 10 questions
+3. Demographics: Add 4 questions
 
-**In Admin Dashboard:**
+## 7️⃣ Publish & Share
 
-1. Click **"Add Stimulus Block"**
-2. Fill in:
-   - **Block Order**: 1, 2, 3, or 4
-   - **Stimulus Type**: Image or Video
-   - **Stimulus URL**: Paste your URL
-   - **Title**: "Stimulus 1" (optional)
-3. Click **Add Block**
-4. **Repeat for all 4 blocks**
+1. Click "Publish Survey"
+2. Share link with participants:
+   ```
+   https://creative-survey-yourname.herokuapp.com/survey
+   ```
 
-### Step 3: Add Questions via API
+## 8️⃣ View Results
 
-*(UI coming soon - use API for now)*
-
-**Question Set 1 (8 questions per block):**
-
-```bash
-curl -X POST http://localhost:5000/api/questions/block/{BLOCK_ID}/question \
-  -H "Content-Type: application/json" \
-  -d '{
-    "questionSet": 1,
-    "questionNumber": 1,
-    "questionText": "How would you rate the creativity of this stimulus?",
-    "questionType": "likert",
-    "scaleMax": 5
-  }'
-```
-
-Repeat for questions 2-8, changing `questionNumber` and `questionText`.
-
-**Question Set 2 (10 questions per block):**
-
-Do the same but change `questionSet` to 2 and `questionNumber` to 1-10.
-
-**Demographic Questions (4 questions):**
-
-```bash
-curl -X POST http://localhost:5000/api/questions/{SURVEY_ID}/demographics \
-  -H "Content-Type: application/json" \
-  -d '{
-    "questionNumber": 1,
-    "questionText": "What is your age?",
-    "questionType": "text"
-  }'
-```
-
-### Step 4: Publish Survey
-
-1. Once all 4 blocks are added
-2. Click **"Publish Survey"**
-3. Survey is now **LIVE**
-
-### Step 5: Share with Participants
-
-Share this URL:
-```
-http://localhost:3000/survey
-```
-
-OR for deployed version:
-```
-https://your-platform.railway.app/survey
-```
+Go to `/results` to see:
+- Total participants
+- Completion rate
+- All responses
 
 ---
 
-## 📊 How Block Randomization Works
+## Getting Stimulus URLs
 
-Each participant sees:
+### For Images:
+1. Go to https://imgur.com
+2. Upload your image
+3. Right-click → "Copy image link"
+4. Paste in survey
 
-**Participant 1:**
-- Block 3 → Block 1 → Block 4 → Block 2
+### For Videos:
+1. Upload to https://youtube.com (Unlisted)
+2. Right-click video → Copy URL
+3. Paste in survey
 
-**Participant 2:**
-- Block 2 → Block 4 → Block 1 → Block 3
-
-**Participant 3:**
-- Block 1 → Block 2 → Block 3 → Block 4
-
-*(Random order each time!)*
-
-This ensures:
-✅ No order bias
-✅ Balanced stimulus exposure
-✅ Valid research data
+OR:
+1. Use https://loom.com for recordings
+2. Copy shareable link
 
 ---
 
-## 📈 Survey Flow for Participants
+## No Credit Card Needed
 
-```
-1. Select Survey
-   ↓
-2. Read Consent Form
-   ↓
-3. Click "I Agree & Start"
-   ↓
-4. [For each of 4 blocks in RANDOM order]
-   - View Stimulus (image/video)
-   - Answer 8 Questions (Question Set 1)
-   - Answer 10 Questions (Question Set 2)
-   ↓
-5. Answer 4 Demographic Questions
-   ↓
-6. See "Thank You" Page
-```
+✅ Completely free  
+✅ No credit card required  
+✅ SQLite database included  
+✅ Heroku free tier  
 
 ---
 
-## 🎯 FAQ
+## Troubleshooting
 
-**Q: Can I change the number of questions?**
-A: Yes! Modify the API calls or edit the code.
+**Q: App takes a long time to load?**
+A: Free tier sleeps after 30 min. First request wakes it up (~10-30 sec).
 
-**Q: What image formats are supported?**
-A: JPG, PNG, GIF (any URL that displays in a browser)
+**Q: How do I update my survey?**
+A: Make changes in admin dashboard.
 
-**Q: Can I pause and resume surveys?**
-A: Currently no - participants must complete in one session.
+**Q: Can I download the data?**
+A: Yes! Coming soon in results dashboard.
 
-**Q: How do I download the data?**
-A: Results are in PostgreSQL. Export via database tools or we can add export feature.
-
-**Q: Is it GDPR compliant?**
-A: We store minimal data (responses only, no IP). Ensure your consent form mentions data handling.
+**Q: What happens to my data?**
+A: Stored in SQLite database on Heroku server.
 
 ---
 
-## 🆘 Need Help?
+## Next Steps
 
-1. Check [DEPLOYMENT.md](./DEPLOYMENT.md) for deployment issues
-2. Check logs in your terminal
-3. GitHub Issues for bugs
+1. Read `HEROKU_SETUP.md` for detailed deployment guide
+2. Create your survey
+3. Test with a few participants
+4. Share link with all 100 participants!
 
