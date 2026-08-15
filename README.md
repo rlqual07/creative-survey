@@ -1,132 +1,179 @@
-# Creative Survey Platform - Free Version (Heroku + SQLite)
+# Creative Survey Platform - Browser-Only Deployment
 
-A completely free survey platform using Heroku (free tier) + SQLite database. **No credit card required.**
+A completely free survey platform with **zero command line required**.
+
+**Just use your browser to deploy!**
 
 ## Features
 
+✅ **No CLI Required** - Deploy entirely through web browser  
 ✅ **Completely Free** - Heroku free tier (no credit card)  
-✅ **No Cloud Database** - SQLite (stored locally on server)  
-✅ **Browser Admin Dashboard** - Create surveys, add questions  
-✅ **Block Randomization** - Automatic random block shuffling  
-✅ **Live Results** - View responses in real-time  
-✅ **Export Data** - Download as CSV  
+✅ **SQLite Database** - No external cloud database needed  
+✅ **Block Randomization** - Automatic random stimulus shuffling  
+✅ **Admin Dashboard** - Create surveys in browser  
+✅ **Live Results** - View responses real-time  
 ✅ **Mobile Friendly** - Works on any device  
 
-## Tech Stack
+## Quick Start (10 Minutes - All in Browser)
 
-- **Frontend**: React + TypeScript (browser-based)
-- **Backend**: Node.js + Express (runs on Heroku free tier)
-- **Database**: SQLite3 (no external database needed)
-- **Hosting**: Heroku (free tier - no credit card)
+### Step 1: Fork Repository on GitHub (2 min)
 
-## Quick Start (10 Minutes)
+1. Go to: https://github.com/rlqual07/creative-survey
+2. Click **Fork** (top right)
+3. Click **Create fork**
+4. Wait for it to complete
 
-### Step 1: Clone & Install Locally
+**Result:** You now have your own copy at `https://github.com/YOUR_USERNAME/creative-survey`
 
-```bash
-git clone https://github.com/rlqual07/creative-survey.git
-cd creative-survey
+### Step 2: Deploy to Heroku (5 min)
 
-# Install dependencies
-npm install
+1. Go to: https://dashboard.heroku.com/
+2. Sign up (free, no credit card)
+3. Click **New** → **Create new app**
+4. App name: `creative-survey-yourname`
+5. Click **Create app**
+6. Go to **Deploy** tab
+7. Click **Connect to GitHub**
+8. Search: `creative-survey`
+9. Click **Connect**
+10. Under "Automatic deploys", click **Enable Automatic Deploys**
+11. Under "Manual deploy", click **Deploy Branch**
+12. Wait ~3 minutes for deployment
 
-# Run both backend and frontend
-npm start
-```
+**Result:** Your app is live at `https://creative-survey-yourname.herokuapp.com`
 
-Open: `http://localhost:3000`
+### Step 3: Create Your Survey (3 min)
 
-### Step 2: Deploy to Heroku (Free)
+1. Open: `https://creative-survey-yourname.herokuapp.com/admin`
+2. Click **"Create New Survey"**
+3. Fill in:
+   - Title: "My Research Study"
+   - Description: "A study about creativity"
+   - Consent Form: Your full consent text
+4. Click **Create Survey**
 
-```bash
-# Install Heroku CLI
-# https://devcenter.heroku.com/articles/heroku-cli
+### Step 4: Add Stimulus Blocks
 
-# Login to Heroku
-heroku login
+For each of your 4 stimuli:
 
-# Create Heroku app
-heroku create creative-survey-yourname
+1. Click **"Add Stimulus Block"**
+2. Choose:
+   - **Block**: 1, 2, 3, or 4
+   - **Type**: Image or Video
+   - **URL**: Paste your stimulus URL (see below)
+   - **Title**: "Stimulus 1" (optional)
+3. Click **Add Block**
+4. Repeat for blocks 2, 3, 4
 
-# Deploy
-git push heroku main
+**How to get stimulus URLs:**
 
-# Done! Your app is live at:
-# https://creative-survey-yourname.herokuapp.com
-```
+**Images:**
+- Go to https://imgur.com
+- Upload image
+- Right-click → "Copy image link"
+- Paste URL in survey
 
-### Step 3: Create Your Survey
+**Videos:**
+- Upload to https://youtube.com (Unlisted)
+- Right-click video → Copy URL
+- Paste in survey
 
-1. Go to: `https://creative-survey-yourname.herokuapp.com/admin`
-2. Create survey with title, description, consent form
-3. Add 4 stimulus blocks (images/videos)
-4. Add questions
-5. Publish
+OR:
+- Use https://loom.com (free screen recordings)
+- Copy shareable link
 
-### Step 4: Share with Participants
+### Step 5: Add Questions
 
-Give them: `https://creative-survey-yourname.herokuapp.com/survey`
+For each stimulus block:
+
+1. Add **Question Set 1** (8 questions)
+2. Add **Question Set 2** (10 questions)
+
+Then add **4 Demographics Questions**
+
+### Step 6: Publish & Share
+
+1. Click **"Publish Survey"**
+2. Share this link with participants:
+   ```
+   https://creative-survey-yourname.herokuapp.com/survey
+   ```
+
+### Step 7: View Results
+
+Go to: `https://creative-survey-yourname.herokuapp.com/results`
+
+See:
+- Total participants
+- Completion rate
+- All responses
 
 ---
 
 ## Architecture
 
 ```
-Your Browser
-     ↓
-┌─────────────────────────────────┐
-│  React Frontend (Admin + Survey) │
-│  - Create surveys               │
-│  - Take surveys                 │
-│  - View results                 │
-└─────────────────────────────────┘
-     ↓
-   HTTP API
-     ↓
-┌─────────────────────────────────┐
-│  Heroku (Free Tier)             │
-│  - Express Server               │
-│  - API Endpoints                │
-└─────────────────────────────────┘
-     ↓
-┌─────────────────────────────────┐
-│  SQLite Database (survey.db)    │
-│  - Surveys                      │
-│  - Questions                    │
-│  - Responses                    │
-│  (Stored as file on server)     │
-└─────────────────────────────────┘
+🌐 Browser
+   ↓
+📱 React Admin Dashboard / Survey Interface
+   ↓
+🔗 HTTP API
+   ↓
+☁️ Heroku Server
+   ├─ Express Backend
+   ├─ SQLite Database (survey.db)
+   └─ (No external databases)
 ```
 
-## Database Structure
+## Database (SQLite)
 
-SQLite tables:
-- `surveys` - Survey metadata
-- `stimulus_blocks` - Image/video stimuli
-- `questions` - All survey questions
-- `demographic_questions` - Demographics
-- `participants` - Participant sessions
-- `responses` - Question responses
-- `demographic_responses` - Demographics responses
+Stored as `survey.db` file on Heroku:
+- Surveys
+- Stimulus blocks
+- Questions
+- Participant responses
+- Demographics
+
+All data stays with your app. No separate database service.
 
 ## No Credit Card Required
 
 ✅ Heroku free tier (no credit card)  
-✅ SQLite (included with Node.js)  
-✅ No external services  
-✅ No file storage fees  
+✅ GitHub free account  
+✅ Imgur (free image hosting)  
+✅ YouTube (free video hosting)  
 ✅ Completely free to run  
 
-## Limitations (Free Tier)
+## Free Tier Limitations
 
-- App sleeps after 30 mins of inactivity (wakes up when accessed)
-- ~100 participants is the practical limit
-- Data stored on Heroku (backed up via git)
+- App sleeps after 30 min of no activity (wakes instantly when accessed)
+- ~100 participants is practical limit
+- Data stored on Heroku (safe)
 
-## Support
+## Making Changes (Browser Only)
 
-See documentation:
-- `QUICKSTART.md` - Step-by-step setup
-- `ADMIN_GUIDE.md` - How to create surveys
-- `HEROKU_SETUP.md` - Detailed Heroku deployment
+If you want to edit code:
 
+1. Go to your GitHub fork: `https://github.com/YOUR_USERNAME/creative-survey`
+2. Click the file to edit
+3. Click the pencil icon ✏️
+4. Make changes
+5. Click **Commit changes**
+6. Heroku auto-deploys within 1 minute!
+
+## Getting Help
+
+See these files in your repo:
+- `QUICKSTART.md` - Step-by-step guide
+- `BROWSER_DEPLOYMENT.md` - Detailed browser-only instructions
+- `README.md` - Project overview
+
+---
+
+**That's it!** Your survey platform is live with:
+- ✅ Zero command line
+- ✅ All in browser
+- ✅ Completely free
+- ✅ For 100 participants
+
+🎉 **Ready to deploy?** Start with Step 1 above!

@@ -1,122 +1,89 @@
-# Quick Start (Heroku + SQLite)
+# Quick Start - Browser Only
 
-## 1️⃣ Install Heroku CLI
+## ⚡ Deploy in 15 Minutes (All in Browser)
 
-Download from: https://devcenter.heroku.com/articles/heroku-cli
+### 1️⃣ Fork Your Repository (GitHub)
 
-## 2️⃣ Deploy in 5 Commands
+1. Go to: https://github.com/rlqual07/creative-survey
+2. Click **Fork** (top right)
+3. Click **Create fork**
+4. ✅ Wait for it to complete
 
-```bash
-# Clone repository
-git clone https://github.com/rlqual07/creative-survey.git
-cd creative-survey
+**Result:** Your own copy at `https://github.com/YOUR_USERNAME/creative-survey`
 
-# Login to Heroku (free, no credit card)
-heroku login
+### 2️⃣ Deploy to Heroku (Free)
 
-# Create app
-heroku create creative-survey-yourname
+1. Go to: https://dashboard.heroku.com/
+2. Sign up free (no credit card)
+3. Click **New** → **Create new app**
+4. App name: `creative-survey-yourname`
+5. Click **Create app**
+6. Go to **Deploy** tab
+7. Click **GitHub** and connect
+8. Search `creative-survey` and connect your fork
+9. Enable **Automatic Deploys**
+10. Click **Deploy Branch**
+11. Wait 3 minutes ⏳
+12. Click **Open app** ✅
 
-# Deploy!
-git push heroku main
-```
+**Result:** Your app is live at `https://creative-survey-yourname.herokuapp.com`
 
-## 3️⃣ Your App is Live!
+### 3️⃣ Create Your Survey
 
-Open: `https://creative-survey-yourname.herokuapp.com`
-
-## 4️⃣ Create Your First Survey
-
-1. Go to `/admin`
-2. Click "Create New Survey"
-3. Fill in:
+1. Go to: `https://creative-survey-yourname.herokuapp.com/admin`
+2. Click **Create New Survey**
+3. Add:
    - Title
    - Description
    - Consent Form
-4. Click Create
+4. Click **Create**
 
-## 5️⃣ Add Stimulus Blocks
+### 4️⃣ Add 4 Stimulus Blocks
 
-1. Click "Add Stimulus Block"
+For each stimulus:
+1. Click **Add Stimulus Block**
 2. Choose Block 1, 2, 3, or 4
-3. Select type: Image or Video
+3. Select Image or Video
 4. Paste URL (use Imgur for images, YouTube for videos)
-5. Click Add
-6. **Repeat for blocks 2, 3, 4**
+5. Click **Add Block**
 
-## 6️⃣ Add Questions
+**Get URLs:**
+- **Images:** Upload to https://imgur.com → Copy link
+- **Videos:** Upload to https://youtube.com (Unlisted) → Copy URL
+
+### 5️⃣ Add Questions
 
 For each block:
+- Question Set 1: 8 questions
+- Question Set 2: 10 questions
+- Demographics: 4 questions
 
-1. Question Set 1: Add 8 questions
-2. Question Set 2: Add 10 questions
-3. Demographics: Add 4 questions
+### 6️⃣ Publish & Share
 
-## 7️⃣ Publish & Share
-
-1. Click "Publish Survey"
-2. Share link with participants:
+1. Click **Publish Survey**
+2. Share with participants:
    ```
    https://creative-survey-yourname.herokuapp.com/survey
    ```
 
-## 8️⃣ View Results
+### 7️⃣ View Results
 
-Go to `/results` to see:
-- Total participants
-- Completion rate
-- All responses
+Go to: `https://creative-survey-yourname.herokuapp.com/results`
 
 ---
 
-## Getting Stimulus URLs
+## ✨ Key Points
 
-### For Images:
-1. Go to https://imgur.com
-2. Upload your image
-3. Right-click → "Copy image link"
-4. Paste in survey
-
-### For Videos:
-1. Upload to https://youtube.com (Unlisted)
-2. Right-click video → Copy URL
-3. Paste in survey
-
-OR:
-1. Use https://loom.com for recordings
-2. Copy shareable link
+✅ **Completely Free** - No credit card ever needed  
+✅ **All in Browser** - No command line, no CLI  
+✅ **Automatic Deployment** - Changes auto-deploy from GitHub  
+✅ **Block Randomization** - Each participant sees different order  
+✅ **SQLite Database** - Data stored on your app (no external DB)  
+✅ **100 Participants** - Works great on free tier  
 
 ---
 
-## No Credit Card Needed
+## 📖 Need More Help?
 
-✅ Completely free  
-✅ No credit card required  
-✅ SQLite database included  
-✅ Heroku free tier  
-
----
-
-## Troubleshooting
-
-**Q: App takes a long time to load?**
-A: Free tier sleeps after 30 min. First request wakes it up (~10-30 sec).
-
-**Q: How do I update my survey?**
-A: Make changes in admin dashboard.
-
-**Q: Can I download the data?**
-A: Yes! Coming soon in results dashboard.
-
-**Q: What happens to my data?**
-A: Stored in SQLite database on Heroku server.
-
----
-
-## Next Steps
-
-1. Read `HEROKU_SETUP.md` for detailed deployment guide
-2. Create your survey
-3. Test with a few participants
-4. Share link with all 100 participants!
+Read: `BROWSER_DEPLOYMENT.md` for detailed step-by-step guide with screenshots!
 
