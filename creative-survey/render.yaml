@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: creative-survey
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: "20"
+
+# NOTE ON DATA PERSISTENCE
+# ------------------------
+# This service currently stores responses in a local SQLite file (survey.db).
+# Render's free tier uses an EPHEMERAL filesystem: the file is destroyed on
+# every deploy, restart, and cold start after inactivity.
+#
+# Acceptable for development and pilot testing only. Before collecting real
+# research data, migrate to a persistent store -- see KNOWN_ISSUES.md.
