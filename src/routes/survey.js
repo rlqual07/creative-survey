@@ -46,9 +46,86 @@ router.get('/:surveyId', async (req, res) => {
 });
 
 // Publish survey
+// Update survey details (title, description, consent form)
+router.put('/:surveyId', async (req, res) => {
+  try {
+    const { surveyId } = req.params;
+    const { title, description, consentForm } = req.body;
+
+    if (!title || !title.trim()) {
+      return res.status(400).json({ error: 'Title is required' });
+    }
+
+    const existing = await get('SELECT * FROM surveys WHERE id = ?', [surveyId]);
+    if (!existing) {
+      return res.status(404).json({ error: 'Survey not found' });
+    }
+
+    await run(
+      `UPDATE surveys
+       SET title = ?, description = ?, consent_form = ?,
+           updated_at = strftime('%s', 'now')
+       WHERE id = ?`,
+      [title, description || '', consentForm || '', surveyId]
+    );
+
+    const survey = await get('SELECT * FROM surveys WHERE id = ?', [surveyId]);
+    res.json(survey);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Delete a survey and everything belonging to it
+router.delete('/:surveyId', async (req, res) => {
+  try {
+    const { surveyId } = req.params;
+
+    const existing = await get('SELECT * FROM surveys WHERE id = ?', [surveyId]);
+    if (!existing) {
+      return res.status(404).json({ error: 'Survey not found' });
+    }
+
+    // Blocks, questions, participants and responses cascade automatically.
+    await run('DELETE FROM surveys WHERE id = ?', [surveyId]);
+    res.json({ deleted: true, id: surveyId });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Revert a published survey to draft
+router.put('/:surveyId/unpublish', async (req, res) => {
+  try {
+    const { surveyId } = req.params;
+    await run(
+      `UPDATE surveys SET status = 'draft', updated_at = strftime('%s', 'now') WHERE id = ?`,
+      [surveyId]
+    );
+    const survey = await get('SELECT * FROM surveys WHERE id = ?', [surveyId]);
+    if (!survey) return res.status(404).json({ error: 'Survey not found' });
+    res.json(survey);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 router.put('/:surveyId/publish', async (req, res) => {
   try {
     const { surveyId } = req.params;
+
+    const survey0 = await get('SELECT * FROM surveys WHERE id = ?', [surveyId]);
+    if (!survey0) {
+      return res.status(404).json({ error: 'Survey not found' });
+    }
+
+    const blocks = await all('SELECT id FROM stimulus_blocks WHERE survey_id = ?', [surveyId]);
+    if (blocks.length === 0) {
+      return res
+        .status(400)
+        .json({ error: 'Add at least one stimulus block before publishing.' });
+    }
+
     await run(
       `UPDATE surveys SET status = 'active', updated_at = strftime('%s', 'now') WHERE id = ?`,
       [surveyId]
@@ -91,8 +168,21 @@ router.post('/:surveyId/start', async (req, res) => {
     const participantId = uuidv4();
     const sessionToken = uuidv4();
 
-    // Generate random block order
-    const blockOrder = [0, 1, 2, 3];
+    // Randomize over the blocks this survey actually has. Block IDs are stored
+    // rather than positional indices, so the recorded order stays interpretable
+    // even if blocks are later added, removed or reordered.
+    const blocks = await all(
+      'SELECT id FROM stimulus_blocks WHERE survey_id = ? ORDER BY block_order ASC',
+      [surveyId]
+    );
+
+    if (blocks.length === 0) {
+      return res
+        .status(400)
+        .json({ error: 'This survey has no stimulus blocks and cannot be started.' });
+    }
+
+    const blockOrder = blocks.map((b) => b.id);
     for (let i = blockOrder.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [blockOrder[i], blockOrder[j]] = [blockOrder[j], blockOrder[i]];

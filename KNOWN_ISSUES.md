@@ -1,90 +1,80 @@
 # Known Issues
 
-Tracked limitations, in priority order. Reviewed 23 August 2026.
+Tracked limitations, in priority order. Reviewed 6 September 2026.
 
 ---
 
-## 1. CRITICAL — Response data is not persistent on Render
+## RESOLVED — Response data is not persistent
 
-**Status:** open, deliberately deferred
-**Blocks:** live research data collection
+Previously the platform stored data in SQLite on Render's ephemeral filesystem,
+losing everything on each deploy, restart, and cold start.
 
-`src/db.js` writes responses to a local SQLite file (`survey.db`) inside the
-application directory. Render's free tier uses an **ephemeral filesystem**:
+Now resolved: storage has been migrated to PostgreSQL (`pg`), configured via the
+`DATABASE_URL` environment variable and hosted on Neon's free plan, which has no
+expiry and requires no credit card.
 
-- the file is destroyed on every deploy;
-- it is destroyed on every restart;
-- free services spin down after ~15 minutes of inactivity, and the disk is
-  wiped when they spin back up.
+**Remaining caveat.** Neon's free plan allows 0.5 GB of storage and 100
+compute-hours per project per month, and exhausting a monthly limit suspends
+compute until the next billing cycle. Survey data is small, and compute scales
+to zero after five minutes of inactivity, so a pilot will not come close. Sustained
+high traffic during full recruitment could, so monitor usage in the Neon console.
 
-**Consequence:** participants can complete the survey successfully, the app will
-report success, and the data will later disappear with no error and no warning.
-Partial data loss mid-fieldwork is the realistic failure mode, and it is silent.
-
-**This is acceptable for development and pilot testing only.** It must be
-resolved before recruiting real participants.
-
-Resolution options:
-
-| Option | Cost | Effort |
-|---|---|---|
-| Render PostgreSQL | Free tier available | Rewrite `src/db.js` query layer |
-| Render persistent disk + SQLite | Paid plan required | Mount config only, minimal code change |
-| Export-after-each-session safeguard | Free | Interim mitigation, not a fix |
-
-**Interim mitigation until resolved:** export results manually and frequently
-during any data collection, and treat every deploy as a data-loss event.
+Note also that free plans generally do not include automatic backups. Export
+your data periodically during any real collection.
 
 ---
 
-## 2. HIGH — No authentication on admin routes
+## 1. HIGH — No authentication on admin routes
 
-Any visitor who reaches `/admin` can create surveys, publish them, and read
-collected responses. There is no login, no API key, and no session check on any
-route in `src/routes/`.
+Any visitor who reaches `/admin` can create surveys, publish them, delete them,
+and read collected responses. There is no login, API key, or session check on
+any route in `src/routes/`.
 
-Relevant for participant confidentiality and any ethics approval that assumes
-access control over response data.
+Relevant to participant confidentiality and to any ethics approval that assumes
+access control over response data. The delete endpoints added in this round
+raise the stakes: an anonymous visitor can now destroy collected data.
 
 ---
 
-## 3. HIGH — Block randomization is hardcoded to four blocks
+## 2. HIGH — Randomization is not counterbalanced
 
-In `src/routes/survey.js`, the participant start route contains:
+`POST /api/survey/:surveyId/start` now randomizes over the survey's real
+stimulus blocks and stores block IDs rather than positional indices, so the
+earlier hardcoded four-block bug is fixed.
 
-```js
-const blockOrder = [0, 1, 2, 3];
-```
+It remains **pure random assignment, not counterbalancing**. Independent random
+draws produce uneven cell counts at realistic sample sizes. Measured over 20
+simulated participants with three blocks, the first-position block came up
+9 / 8 / 3 against an expected 6.7 each. Order is therefore partially confounded
+with stimulus, and some sequences may go unobserved entirely.
 
-The block count is fixed regardless of how many stimulus blocks the survey
-actually has. With three blocks, participants are assigned a non-existent
-fourth; with six, two are never shown.
-
-It also shuffles positional *indices* rather than block IDs, so the stored
-`participants.block_randomization` value becomes uninterpretable if blocks are
-ever deleted and re-added.
-
-Further gaps:
+Also outstanding:
 - `Math.random()` is unseeded, so assignment is not reproducible or auditable.
-- Independent random assignment is not counterbalanced; cell counts will be
-  uneven at realistic sample sizes, confounding order with stimulus.
 - Question order within a block is never randomized.
 
-Scheduled for Phase 2.
+Planned for Phase 2: a balanced Latin square with a least-used-sequence fallback
+to tolerate attrition.
 
 ---
 
-## 4. MEDIUM — Completion is never recorded
+## 3. MEDIUM — Completion is never recorded
 
-No route sets `participants.completed_at`. The column exists in the schema and
+No route sets `participants.completed_at`. The column exists and
 `GET /api/responses/survey/:surveyId/results` filters on it, so the reported
 completion rate is permanently 0%.
+
+---
+
+## 4. MEDIUM — No question management in the admin UI
+
+The API supports adding questions (`POST /api/questions/question/add`), but the
+admin dashboard has no interface for it. Questions must currently be added by
+calling the API directly.
 
 ---
 
 ## 5. LOW — Results endpoint returns counts only
 
 `GET /api/responses/survey/:surveyId/results` returns aggregate totals. There is
-no per-item breakdown and no CSV or SPSS-friendly export, so response data
-cannot currently be pulled out for analysis without querying the database
-directly.
+no per-item breakdown and no CSV or SPSS-friendly export, so data cannot be
+pulled out for analysis without querying the database directly.
