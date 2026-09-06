@@ -1,179 +1,85 @@
-# Creative Survey Platform - Browser-Only Deployment
+# Creative Survey Platform
 
-A completely free survey platform with **zero command line required**.
+A survey platform for stimulus-based research, with block randomization of
+stimulus presentation order.
 
-**Just use your browser to deploy!**
+> **Before collecting real data, read [KNOWN_ISSUES.md](KNOWN_ISSUES.md).**
+> Responses are currently stored in SQLite on an ephemeral filesystem and will
+> be lost on redeploy. The platform is suitable for development and pilot
+> testing only until that is resolved.
 
 ## Features
 
-✅ **No CLI Required** - Deploy entirely through web browser  
-✅ **Completely Free** - Heroku free tier (no credit card)  
-✅ **SQLite Database** - No external cloud database needed  
-✅ **Block Randomization** - Automatic random stimulus shuffling  
-✅ **Admin Dashboard** - Create surveys in browser  
-✅ **Live Results** - View responses real-time  
-✅ **Mobile Friendly** - Works on any device  
-
-## Quick Start (10 Minutes - All in Browser)
-
-### Step 1: Fork Repository on GitHub (2 min)
-
-1. Go to: https://github.com/rlqual07/creative-survey
-2. Click **Fork** (top right)
-3. Click **Create fork**
-4. Wait for it to complete
-
-**Result:** You now have your own copy at `https://github.com/YOUR_USERNAME/creative-survey`
-
-### Step 2: Deploy to Heroku (5 min)
-
-1. Go to: https://dashboard.heroku.com/
-2. Sign up (free, no credit card)
-3. Click **New** → **Create new app**
-4. App name: `creative-survey-yourname`
-5. Click **Create app**
-6. Go to **Deploy** tab
-7. Click **Connect to GitHub**
-8. Search: `creative-survey`
-9. Click **Connect**
-10. Under "Automatic deploys", click **Enable Automatic Deploys**
-11. Under "Manual deploy", click **Deploy Branch**
-12. Wait ~3 minutes for deployment
-
-**Result:** Your app is live at `https://creative-survey-yourname.herokuapp.com`
-
-### Step 3: Create Your Survey (3 min)
-
-1. Open: `https://creative-survey-yourname.herokuapp.com/admin`
-2. Click **"Create New Survey"**
-3. Fill in:
-   - Title: "My Research Study"
-   - Description: "A study about creativity"
-   - Consent Form: Your full consent text
-4. Click **Create Survey**
-
-### Step 4: Add Stimulus Blocks
-
-For each of your 4 stimuli:
-
-1. Click **"Add Stimulus Block"**
-2. Choose:
-   - **Block**: 1, 2, 3, or 4
-   - **Type**: Image or Video
-   - **URL**: Paste your stimulus URL (see below)
-   - **Title**: "Stimulus 1" (optional)
-3. Click **Add Block**
-4. Repeat for blocks 2, 3, 4
-
-**How to get stimulus URLs:**
-
-**Images:**
-- Go to https://imgur.com
-- Upload image
-- Right-click → "Copy image link"
-- Paste URL in survey
-
-**Videos:**
-- Upload to https://youtube.com (Unlisted)
-- Right-click video → Copy URL
-- Paste in survey
-
-OR:
-- Use https://loom.com (free screen recordings)
-- Copy shareable link
-
-### Step 5: Add Questions
-
-For each stimulus block:
-
-1. Add **Question Set 1** (8 questions)
-2. Add **Question Set 2** (10 questions)
-
-Then add **4 Demographics Questions**
-
-### Step 6: Publish & Share
-
-1. Click **"Publish Survey"**
-2. Share this link with participants:
-   ```
-   https://creative-survey-yourname.herokuapp.com/survey
-   ```
-
-### Step 7: View Results
-
-Go to: `https://creative-survey-yourname.herokuapp.com/results`
-
-See:
-- Total participants
-- Completion rate
-- All responses
-
----
+- Admin dashboard for creating surveys and stimulus blocks
+- Participant survey flow with consent step
+- Block randomization of stimulus order per participant
+- Results dashboard with participation counts
+- Responsive layout
 
 ## Architecture
 
+A single Node process serves both the API and the compiled React app, so there
+is one service to deploy and no CORS configuration.
+
 ```
-🌐 Browser
-   ↓
-📱 React Admin Dashboard / Survey Interface
-   ↓
-🔗 HTTP API
-   ↓
-☁️ Heroku Server
-   ├─ Express Backend
-   ├─ SQLite Database (survey.db)
-   └─ (No external databases)
+server.js              Express entrypoint; serves /api and frontend/build
+src/db.js              SQLite connection, schema, promise helpers
+src/routes/            survey.js, questions.js, responses.js
+frontend/              React 18 + TypeScript (Create React App)
+  src/App.tsx          Router and navigation shell
+  src/pages/           AdminDashboard, SurveyFlow, ResultsDashboard
+  src/styles/          Per-page stylesheets
+render.yaml            Render service definition
 ```
 
-## Database (SQLite)
+The frontend calls the API at the relative path `/api`. Because Express serves
+the built frontend from the same origin, this works identically in development
+(via the `proxy` setting in `frontend/package.json`) and in production. Do not
+reintroduce an absolute API URL.
 
-Stored as `survey.db` file on Heroku:
-- Surveys
-- Stimulus blocks
-- Questions
-- Participant responses
-- Demographics
+## Requirements
 
-All data stays with your app. No separate database service.
+- Node.js 20 or later
 
-## No Credit Card Required
+## Local development
 
-✅ Heroku free tier (no credit card)  
-✅ GitHub free account  
-✅ Imgur (free image hosting)  
-✅ YouTube (free video hosting)  
-✅ Completely free to run  
+```bash
+npm install          # backend dependencies
+npm run build        # installs frontend deps and builds the React app
+npm start            # serves on http://localhost:5000
+```
 
-## Free Tier Limitations
+For frontend hot-reloading, run the API and the dev server in two terminals:
 
-- App sleeps after 30 min of no activity (wakes instantly when accessed)
-- ~100 participants is practical limit
-- Data stored on Heroku (safe)
+```bash
+npm run dev                      # terminal 1 - API on :5000
+cd frontend && npm start         # terminal 2 - React on :3000, proxied to :5000
+```
 
-## Making Changes (Browser Only)
+Routes:
 
-If you want to edit code:
+| Path | Purpose |
+|---|---|
+| `/` | Landing page |
+| `/admin` | Create and publish surveys |
+| `/survey` | Participant flow |
+| `/results/:surveyId` | Results dashboard |
+| `/api/health` | Health check |
 
-1. Go to your GitHub fork: `https://github.com/YOUR_USERNAME/creative-survey`
-2. Click the file to edit
-3. Click the pencil icon ✏️
-4. Make changes
-5. Click **Commit changes**
-6. Heroku auto-deploys within 1 minute!
+## Deployment
 
-## Getting Help
+Render is the supported host. See [RENDER_DEPLOYMENT.md](RENDER_DEPLOYMENT.md).
 
-See these files in your repo:
-- `QUICKSTART.md` - Step-by-step guide
-- `BROWSER_DEPLOYMENT.md` - Detailed browser-only instructions
-- `README.md` - Project overview
+Heroku is no longer supported. Heroku discontinued its free dyno tier in
+November 2022, and the previous Heroku instructions in this repository were
+obsolete.
 
----
+## Documentation
 
-**That's it!** Your survey platform is live with:
-- ✅ Zero command line
-- ✅ All in browser
-- ✅ Completely free
-- ✅ For 100 participants
-
-🎉 **Ready to deploy?** Start with Step 1 above!
+| File | Contents |
+|---|---|
+| [QUICKSTART.md](QUICKSTART.md) | Fastest path to a running survey |
+| [RENDER_DEPLOYMENT.md](RENDER_DEPLOYMENT.md) | Deployment walkthrough |
+| [API_REFERENCE.md](API_REFERENCE.md) | Endpoint reference |
+| [DATABASE.md](DATABASE.md) | Schema reference |
+| [KNOWN_ISSUES.md](KNOWN_ISSUES.md) | Tracked limitations |

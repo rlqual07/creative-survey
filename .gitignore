@@ -4,5 +4,3 @@ survey.db
 .DS_Store
 *.log
 build/
-.git
-.gitignore

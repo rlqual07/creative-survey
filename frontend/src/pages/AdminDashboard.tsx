@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import '../styles/AdminDashboard.css';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const API_URL = '/api';
 
 interface Survey {
   id: string;
@@ -19,22 +20,12 @@ interface StimulusBlock {
   stimulus_title: string;
 }
 
-interface Question {
-  id: string;
-  question_text: string;
-  question_type: string;
-  question_set: number;
-  question_number: number;
-  scale_max?: number;
-}
-
 const AdminDashboard: React.FC = () => {
   const [surveys, setSurveys] = useState<Survey[]>([]);
   const [activeSurvey, setActiveSurvey] = useState<Survey | null>(null);
   const [showNewSurvey, setShowNewSurvey] = useState(false);
   const [showAddBlock, setShowAddBlock] = useState(false);
   const [blocks, setBlocks] = useState<StimulusBlock[]>([]);
-  const [questions, setQuestions] = useState<Question[]>([]);
 
   // Form states
   const [surveyForm, setSurveyForm] = useState({
@@ -48,14 +39,6 @@ const AdminDashboard: React.FC = () => {
     stimulusType: 'image',
     stimulusUrl: '',
     stimulusTitle: '',
-  });
-
-  const [questionForm, setQuestionForm] = useState({
-    questionSet: 1,
-    questionNumber: 1,
-    questionText: '',
-    questionType: 'likert',
-    scaleMax: 5,
   });
 
   // Load surveys on mount

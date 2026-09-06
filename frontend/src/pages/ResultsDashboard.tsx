@@ -1,21 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
+import '../styles/ResultsDashboard.css';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const API_URL = '/api';
 
 const ResultsDashboard: React.FC = () => {
   const { surveyId } = useParams<{ surveyId: string }>();
   const [results, setResults] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (surveyId) {
-      loadResults();
-    }
-  }, [surveyId]);
-
-  const loadResults = async () => {
+  const loadResults = useCallback(async () => {
     try {
       const response = await axios.get(`${API_URL}/responses/survey/${surveyId}/results`);
       setResults(response.data);
@@ -24,7 +19,13 @@ const ResultsDashboard: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [surveyId]);
+
+  useEffect(() => {
+    if (surveyId) {
+      loadResults();
+    }
+  }, [surveyId, loadResults]);
 
   if (loading) {
     return <div className="card">Loading...</div>;

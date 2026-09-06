@@ -1,5 +1,11 @@
 # Deploy to Render (Free, No Credit Card)
 
+> **Before collecting real data:** responses are stored in SQLite on Render's
+> ephemeral filesystem and are destroyed on every deploy, restart, and cold
+> start. See [KNOWN_ISSUES.md](KNOWN_ISSUES.md) item 1. Pilot testing only.
+
+
+
 ## ✅ CONFIRMED: No Credit Card Required
 
 Render's free tier **does NOT require a credit card**. You can sign up, deploy, and run your app completely free.

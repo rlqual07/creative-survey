@@ -1,89 +1,64 @@
-# Quick Start - Browser Only
+# Quick Start
 
-## ⚡ Deploy in 15 Minutes (All in Browser)
+Getting a survey running, entirely in the browser.
 
-### 1️⃣ Fork Your Repository (GitHub)
+> Pilot testing only until the data persistence issue in
+> [KNOWN_ISSUES.md](KNOWN_ISSUES.md) is resolved. Responses will be lost on
+> redeploy.
 
-1. Go to: https://github.com/rlqual07/creative-survey
-2. Click **Fork** (top right)
-3. Click **Create fork**
-4. ✅ Wait for it to complete
+## 1. Deploy to Render
 
-**Result:** Your own copy at `https://github.com/YOUR_USERNAME/creative-survey`
+Full walkthrough in [RENDER_DEPLOYMENT.md](RENDER_DEPLOYMENT.md). In short:
 
-### 2️⃣ Deploy to Heroku (Free)
+1. Fork this repository on GitHub.
+2. At [render.com](https://render.com), create a new **Web Service** and connect
+   your fork.
+3. Render reads `render.yaml` and configures the build automatically.
+4. Wait for the first deploy to finish.
 
-1. Go to: https://dashboard.heroku.com/
-2. Sign up free (no credit card)
-3. Click **New** → **Create new app**
-4. App name: `creative-survey-yourname`
-5. Click **Create app**
-6. Go to **Deploy** tab
-7. Click **GitHub** and connect
-8. Search `creative-survey` and connect your fork
-9. Enable **Automatic Deploys**
-10. Click **Deploy Branch**
-11. Wait 3 minutes ⏳
-12. Click **Open app** ✅
+Your app will be live at `https://<your-service-name>.onrender.com`.
 
-**Result:** Your app is live at `https://creative-survey-yourname.herokuapp.com`
+Note that free Render services spin down after inactivity, so the first request
+after a quiet period takes roughly 30-60 seconds to respond. Warm the app before
+sending participants to it.
 
-### 3️⃣ Create Your Survey
+## 2. Create a survey
 
-1. Go to: `https://creative-survey-yourname.herokuapp.com/admin`
-2. Click **Create New Survey**
-3. Add:
-   - Title
-   - Description
-   - Consent Form
-4. Click **Create**
+Go to `https://<your-service-name>.onrender.com/admin`.
 
-### 4️⃣ Add 4 Stimulus Blocks
+1. Enter a title, description, and consent text, then create the survey.
+2. Add your stimulus blocks. Each block needs a type (image or video), a URL,
+   and a title. Stimulus files must be hosted somewhere publicly reachable.
+3. Publish the survey when you are ready.
 
-For each stimulus:
-1. Click **Add Stimulus Block**
-2. Choose Block 1, 2, 3, or 4
-3. Select Image or Video
-4. Paste URL (use Imgur for images, YouTube for videos)
-5. Click **Add Block**
+## 3. Collect responses
 
-**Get URLs:**
-- **Images:** Upload to https://imgur.com → Copy link
-- **Videos:** Upload to https://youtube.com (Unlisted) → Copy URL
+Send participants to `https://<your-service-name>.onrender.com/survey`.
 
-### 5️⃣ Add Questions
+Each participant is assigned a randomized stimulus block order at the point they
+begin, stored against their session.
 
-For each block:
-- Question Set 1: 8 questions
-- Question Set 2: 10 questions
-- Demographics: 4 questions
+> The current randomization assumes exactly four stimulus blocks. See item 3 in
+> [KNOWN_ISSUES.md](KNOWN_ISSUES.md) before designing your study around a
+> different number.
 
-### 6️⃣ Publish & Share
+## 4. View results
 
-1. Click **Publish Survey**
-2. Share with participants:
-   ```
-   https://creative-survey-yourname.herokuapp.com/survey
-   ```
+Go to `https://<your-service-name>.onrender.com/results/<surveyId>`.
 
-### 7️⃣ View Results
+The survey ID appears in the admin dashboard after creation.
 
-Go to: `https://creative-survey-yourname.herokuapp.com/results`
+> Completion rate currently reads 0% regardless of actual completions — see item
+> 4 in [KNOWN_ISSUES.md](KNOWN_ISSUES.md).
 
----
+## Troubleshooting
 
-## ✨ Key Points
+**Build fails on Render.** Check the build log. Render sets `CI=true`, which
+makes Create React App treat lint warnings as build errors. Any new warning you
+introduce will fail the build.
 
-✅ **Completely Free** - No credit card ever needed  
-✅ **All in Browser** - No command line, no CLI  
-✅ **Automatic Deployment** - Changes auto-deploy from GitHub  
-✅ **Block Randomization** - Each participant sees different order  
-✅ **SQLite Database** - Data stored on your app (no external DB)  
-✅ **100 Participants** - Works great on free tier  
+**Blank page or failing requests.** Confirm the frontend is calling the relative
+path `/api`, not an absolute URL. An absolute `localhost` URL will send every
+participant's browser to their own machine.
 
----
-
-## 📖 Need More Help?
-
-Read: `BROWSER_DEPLOYMENT.md` for detailed step-by-step guide with screenshots!
-
+**First request very slow.** Expected on the free tier. The service is waking up.
