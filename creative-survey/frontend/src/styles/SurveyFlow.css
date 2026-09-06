@@ -1,0 +1,141 @@
+.survey-page {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.consent-text {
+  background: #f9f9f9;
+  padding: 2rem;
+  border-radius: 8px;
+  max-height: 400px;
+  overflow-y: auto;
+  margin: 1.5rem 0;
+  line-height: 1.6;
+  border-left: 4px solid #667eea;
+}
+
+.consent-buttons {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.survey-select-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.survey-select-card {
+  background: white;
+  border: 2px solid #eee;
+  border-radius: 8px;
+  padding: 1.5rem;
+  transition: all 0.3s;
+}
+
+.survey-select-card:hover {
+  border-color: #667eea;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+}
+
+.survey-select-card h3 {
+  margin-top: 0;
+  color: #667eea;
+}
+
+.no-surveys {
+  text-align: center;
+  color: #999;
+  padding: 2rem;
+  font-size: 1.1rem;
+}
+
+.survey-taker {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.progress-section {
+  margin-bottom: 2rem;
+}
+
+.progress-bar {
+  height: 8px;
+  background-color: #eee;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  transition: width 0.3s ease;
+}
+
+.progress-text {
+  text-align: center;
+  color: #666;
+  font-weight: 500;
+}
+
+.stimulus-viewer {
+  text-align: center;
+}
+
+.stimulus-viewer h2 {
+  color: #667eea;
+  margin-bottom: 1.5rem;
+}
+
+.stimulus-image {
+  max-width: 100%;
+  max-height: 500px;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.stimulus-video {
+  max-width: 100%;
+  max-height: 500px;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+}
+
+.question-set {
+  text-align: center;
+}
+
+.question-set h3 {
+  color: #667eea;
+  margin-bottom: 1.5rem;
+}
+
+.placeholder-text {
+  color: #999;
+  padding: 1rem;
+  background: #f9f9f9;
+  border-radius: 4px;
+  margin: 0.5rem 0;
+}
+
+.thank-you {
+  text-align: center;
+  padding: 3rem 2rem;
+}
+
+.thank-you h1 {
+  color: #27ae60;
+  font-size: 2rem;
+  margin-bottom: 1rem;
+}
+
+.thank-you p {
+  color: #666;
+  font-size: 1.1rem;
+  margin-bottom: 2rem;
+}
