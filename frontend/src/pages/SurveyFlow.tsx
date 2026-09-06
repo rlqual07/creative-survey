@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import '../styles/SurveyFlow.css';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const API_URL = '/api';
 
 interface Survey {
   id: string;
@@ -28,13 +29,12 @@ const SurveyFlow: React.FC = () => {
   const [surveys, setSurveys] = useState<Survey[]>([]);
   const [selectedSurvey, setSelectedSurvey] = useState<Survey | null>(null);
   const [step, setStep] = useState<'select' | 'consent' | 'survey' | 'complete'>('select');
-  const [participantId, setParticipantId] = useState<string | null>(null);
+  const [, setParticipantId] = useState<string | null>(null);
   const [blockOrder, setBlockOrder] = useState<number[]>([]);
   const [currentBlockIndex, setCurrentBlockIndex] = useState(0);
   const [blocks, setBlocks] = useState<StimulusBlock[]>([]);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentSubStep, setCurrentSubStep] = useState<'stimulus' | 'q1' | 'q2'>('stimulus');
-  const [responses, setResponses] = useState<Record<string, any>>({});
 
   useEffect(() => {
     loadActiveSurveys();
@@ -204,7 +204,7 @@ interface StimulusViewerProps {
 }
 
 const StimulusViewer: React.FC<StimulusViewerProps> = ({ type, url, title, onViewed }) => {
-  const [hasViewed, setHasViewed] = useState(false);
+  const [, setHasViewed] = useState(false);
 
   const handleViewed = () => {
     setHasViewed(true);
