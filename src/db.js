@@ -116,7 +116,7 @@ const initialize = async () => {
       CREATE TABLE IF NOT EXISTS questions (
         id TEXT PRIMARY KEY,
         survey_id TEXT NOT NULL REFERENCES surveys(id) ON DELETE CASCADE,
-        block_id TEXT NOT NULL REFERENCES stimulus_blocks(id) ON DELETE CASCADE,
+        block_id TEXT REFERENCES stimulus_blocks(id) ON DELETE CASCADE,
         question_set INTEGER NOT NULL,
         question_number INTEGER NOT NULL,
         question_text TEXT NOT NULL,
@@ -153,6 +153,8 @@ const initialize = async () => {
         id TEXT PRIMARY KEY,
         participant_id TEXT NOT NULL REFERENCES participants(id) ON DELETE CASCADE,
         question_id TEXT NOT NULL REFERENCES questions(id) ON DELETE CASCADE,
+        block_id TEXT REFERENCES stimulus_blocks(id) ON DELETE CASCADE,
+        block_position INTEGER,
         response_value TEXT,
         answered_at BIGINT DEFAULT EXTRACT(EPOCH FROM NOW())::bigint
       )
@@ -167,6 +169,24 @@ const initialize = async () => {
         answered_at BIGINT DEFAULT EXTRACT(EPOCH FROM NOW())::bigint
       )
     `);
+
+    // Additive migrations for databases created by an earlier version.
+    const migrations = [
+      `ALTER TABLE surveys ADD COLUMN IF NOT EXISTS intro_text TEXT`,
+      `ALTER TABLE participants ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'in_progress'`,
+      `ALTER TABLE participants ADD COLUMN IF NOT EXISTS abandoned_at BIGINT`,
+      `ALTER TABLE responses ADD COLUMN IF NOT EXISTS block_id TEXT`,
+      `ALTER TABLE responses ADD COLUMN IF NOT EXISTS block_position INTEGER`,
+      `ALTER TABLE questions ALTER COLUMN block_id DROP NOT NULL`,
+    ];
+    for (const sql of migrations) {
+      try {
+        await query(sql);
+      } catch (err) {
+        // DROP NOT NULL fails harmlessly if the column is already nullable.
+        if (!/does not exist|cannot|already/i.test(err.message)) throw err;
+      }
+    }
 
     const { rows } = await pool.query('SELECT current_database() AS name');
     console.log(`✅ Connected to Postgres database "${rows[0].name}"`);

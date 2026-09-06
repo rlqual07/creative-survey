@@ -167,3 +167,28 @@
   border-left: 3px solid #f39c12;
   border-radius: 4px;
 }
+
+/* ---- Added: question editor ---- */
+.question-help {
+  font-size: 0.85rem;
+  color: #666;
+  margin: 0.5rem 0;
+}
+
+.question-editor {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: #fafbfc;
+  border: 1px solid #eee;
+  border-radius: 6px;
+}
+
+.question-set {
+  margin-bottom: 1.5rem;
+}
+
+.option-list {
+  margin: 0.4rem 0 0 1.2rem;
+  font-size: 0.85rem;
+  color: #555;
+}

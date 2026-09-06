@@ -7,16 +7,60 @@ const router = express.Router();
 // Save response
 router.post('/', async (req, res) => {
   try {
-    const { participantId, questionId, responseValue } = req.body;
+    const { participantId, questionId, responseValue, blockId, blockPosition } =
+      req.body;
     const responseId = uuidv4();
 
     await run(
-      `INSERT INTO responses (id, participant_id, question_id, response_value) VALUES (?, ?, ?, ?)`,
-      [responseId, participantId, questionId, responseValue]
+      `INSERT INTO responses
+         (id, participant_id, question_id, block_id, block_position, response_value)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [
+        responseId,
+        participantId,
+        questionId,
+        blockId || null,
+        blockPosition !== undefined ? blockPosition : null,
+        responseValue,
+      ]
     );
 
     const response = await get('SELECT * FROM responses WHERE id = ?', [responseId]);
     res.status(201).json(response);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Save a page of responses in one request (used by the Likert grids)
+router.post('/batch', async (req, res) => {
+  try {
+    const { participantId, blockId, blockPosition, answers } = req.body;
+
+    if (!Array.isArray(answers) || answers.length === 0) {
+      return res.status(400).json({ error: 'answers must be a non-empty array' });
+    }
+
+    const saved = [];
+    for (const a of answers) {
+      const responseId = uuidv4();
+      await run(
+        `INSERT INTO responses
+           (id, participant_id, question_id, block_id, block_position, response_value)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [
+          responseId,
+          participantId,
+          a.questionId,
+          blockId || null,
+          blockPosition !== undefined ? blockPosition : null,
+          String(a.responseValue),
+        ]
+      );
+      saved.push(responseId);
+    }
+
+    res.status(201).json({ saved: saved.length });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -47,6 +91,9 @@ router.get('/survey/:surveyId/results', async (req, res) => {
 
     const participants = await all('SELECT * FROM participants WHERE survey_id = ?', [surveyId]);
     const completedCount = participants.filter((p) => p.completed_at).length;
+    const abandonedCount = participants.filter(
+      (p) => p.status === 'abandoned'
+    ).length;
     const responses = await all(
       `SELECT r.* FROM responses r 
        JOIN participants p ON r.participant_id = p.id 
@@ -57,6 +104,7 @@ router.get('/survey/:surveyId/results', async (req, res) => {
     res.json({
       totalParticipants: participants.length,
       completedParticipants: completedCount,
+      abandonedParticipants: abandonedCount,
       completionRate: participants.length > 0 ? ((completedCount / participants.length) * 100).toFixed(1) : 0,
       totalResponses: responses.length,
     });

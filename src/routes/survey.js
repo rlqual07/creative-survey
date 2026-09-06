@@ -1,19 +1,22 @@
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
 const { run, get, all } = require('../db');
+const { seedDefaultQuestions, SET_PROMPTS } = require('../defaultInstrument');
 
 const router = express.Router();
 
 // Create survey
 router.post('/', async (req, res) => {
   try {
-    const { title, description, consentForm } = req.body;
+    const { title, description, consentForm, introText } = req.body;
     const surveyId = uuidv4();
 
     await run(
-      `INSERT INTO surveys (id, title, description, consent_form, status) VALUES (?, ?, ?, ?, 'draft')`,
-      [surveyId, title, description, consentForm]
+      `INSERT INTO surveys (id, title, description, consent_form, intro_text, status) VALUES (?, ?, ?, ?, ?, 'draft')`,
+      [surveyId, title, description, consentForm, introText || '']
     );
+
+    await seedDefaultQuestions(surveyId);
 
     const survey = await get('SELECT * FROM surveys WHERE id = ?', [surveyId]);
     res.status(201).json(survey);
@@ -50,7 +53,7 @@ router.get('/:surveyId', async (req, res) => {
 router.put('/:surveyId', async (req, res) => {
   try {
     const { surveyId } = req.params;
-    const { title, description, consentForm } = req.body;
+    const { title, description, consentForm, introText } = req.body;
 
     if (!title || !title.trim()) {
       return res.status(400).json({ error: 'Title is required' });
@@ -63,10 +66,16 @@ router.put('/:surveyId', async (req, res) => {
 
     await run(
       `UPDATE surveys
-       SET title = ?, description = ?, consent_form = ?,
+       SET title = ?, description = ?, consent_form = ?, intro_text = ?,
            updated_at = strftime('%s', 'now')
        WHERE id = ?`,
-      [title, description || '', consentForm || '', surveyId]
+      [
+        title,
+        description || '',
+        consentForm || '',
+        introText !== undefined ? introText : existing.intro_text || '',
+        surveyId,
+      ]
     );
 
     const survey = await get('SELECT * FROM surveys WHERE id = ?', [surveyId]);
@@ -195,6 +204,111 @@ router.post('/:surveyId/start', async (req, res) => {
 
     const participant = await get('SELECT * FROM participants WHERE id = ?', [participantId]);
     res.status(201).json(participant);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Everything a participant needs in one call: survey, ordered blocks,
+// question template grouped into sets, and demographic questions.
+router.get('/:surveyId/instrument', async (req, res) => {
+  try {
+    const { surveyId } = req.params;
+
+    const survey = await get('SELECT * FROM surveys WHERE id = ?', [surveyId]);
+    if (!survey) return res.status(404).json({ error: 'Survey not found' });
+
+    const blocks = await all(
+      'SELECT * FROM stimulus_blocks WHERE survey_id = ? ORDER BY block_order ASC',
+      [surveyId]
+    );
+
+    const questions = await all(
+      `SELECT * FROM questions WHERE survey_id = ?
+       ORDER BY question_set ASC, question_number ASC`,
+      [surveyId]
+    );
+
+    // Group into sets; each set becomes one page shown after a stimulus.
+    const setMap = new Map();
+    for (const q of questions) {
+      if (!setMap.has(q.question_set)) {
+        setMap.set(q.question_set, {
+          questionSet: q.question_set,
+          prompt: SET_PROMPTS[q.question_set] || '',
+          type: q.question_type,
+          scaleMax: q.scale_max,
+          items: [],
+        });
+      }
+      setMap.get(q.question_set).items.push({
+        id: q.id,
+        text: q.question_text,
+        type: q.question_type,
+        scaleMax: q.scale_max,
+        options: q.options ? JSON.parse(q.options) : null,
+      });
+    }
+
+    const demographics = await all(
+      `SELECT * FROM demographic_questions WHERE survey_id = ?
+       ORDER BY question_number ASC`,
+      [surveyId]
+    );
+
+    res.json({
+      survey,
+      blocks,
+      questionSets: Array.from(setMap.values()).sort(
+        (a, b) => a.questionSet - b.questionSet
+      ),
+      demographics: demographics.map((d) => ({
+        id: d.id,
+        text: d.question_text,
+        type: d.question_type,
+        options: d.options ? JSON.parse(d.options) : null,
+      })),
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Mark a participant as having finished
+router.post('/participant/:participantId/complete', async (req, res) => {
+  try {
+    const { participantId } = req.params;
+    const result = await run(
+      `UPDATE participants
+       SET completed_at = strftime('%s', 'now'), status = 'completed'
+       WHERE id = ?`,
+      [participantId]
+    );
+    if (result.changes === 0) {
+      return res.status(404).json({ error: 'Participant not found' });
+    }
+    const participant = await get('SELECT * FROM participants WHERE id = ?', [participantId]);
+    res.json(participant);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Mark a participant as having exited early. Partial responses are retained.
+router.post('/participant/:participantId/abandon', async (req, res) => {
+  try {
+    const { participantId } = req.params;
+    const result = await run(
+      `UPDATE participants
+       SET status = 'abandoned', abandoned_at = strftime('%s', 'now')
+       WHERE id = ? AND completed_at IS NULL`,
+      [participantId]
+    );
+    if (result.changes === 0) {
+      return res.status(404).json({ error: 'Participant not found or already complete' });
+    }
+    const participant = await get('SELECT * FROM participants WHERE id = ?', [participantId]);
+    res.json(participant);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
