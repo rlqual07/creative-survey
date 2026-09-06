@@ -155,4 +155,96 @@ router.post('/:surveyId/demographics', async (req, res) => {
   }
 });
 
+// List a survey's question template (admin)
+router.get('/:surveyId/questions', async (req, res) => {
+  try {
+    const questions = await all(
+      `SELECT * FROM questions WHERE survey_id = ?
+       ORDER BY question_set ASC, question_number ASC`,
+      [req.params.surveyId]
+    );
+    res.json(
+      questions.map((q) => ({
+        ...q,
+        options: q.options ? JSON.parse(q.options) : null,
+      }))
+    );
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Edit a question's wording or options (admin)
+router.put('/question/:questionId', async (req, res) => {
+  try {
+    const { questionId } = req.params;
+    const { questionText, options, scaleMax } = req.body;
+
+    const existing = await get('SELECT * FROM questions WHERE id = ?', [questionId]);
+    if (!existing) return res.status(404).json({ error: 'Question not found' });
+
+    if (questionText !== undefined && !String(questionText).trim()) {
+      return res.status(400).json({ error: 'Question text cannot be empty' });
+    }
+
+    await run(
+      `UPDATE questions SET question_text = ?, options = ?, scale_max = ? WHERE id = ?`,
+      [
+        questionText !== undefined ? questionText : existing.question_text,
+        options !== undefined
+          ? options
+            ? JSON.stringify(options)
+            : null
+          : existing.options,
+        scaleMax !== undefined ? scaleMax : existing.scale_max,
+        questionId,
+      ]
+    );
+
+    const updated = await get('SELECT * FROM questions WHERE id = ?', [questionId]);
+    res.json({ ...updated, options: updated.options ? JSON.parse(updated.options) : null });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// List demographic questions (admin)
+router.get('/:surveyId/demographic-questions', async (req, res) => {
+  try {
+    const rows = await all(
+      `SELECT * FROM demographic_questions WHERE survey_id = ?
+       ORDER BY question_number ASC`,
+      [req.params.surveyId]
+    );
+    res.json(rows.map((d) => ({ ...d, options: d.options ? JSON.parse(d.options) : null })));
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Edit a demographic question (admin)
+router.put('/demographic/:questionId', async (req, res) => {
+  try {
+    const { questionId } = req.params;
+    const { questionText, options } = req.body;
+
+    const existing = await get('SELECT * FROM demographic_questions WHERE id = ?', [questionId]);
+    if (!existing) return res.status(404).json({ error: 'Question not found' });
+
+    await run(
+      `UPDATE demographic_questions SET question_text = ?, options = ? WHERE id = ?`,
+      [
+        questionText !== undefined ? questionText : existing.question_text,
+        options !== undefined ? JSON.stringify(options) : existing.options,
+        questionId,
+      ]
+    );
+
+    const updated = await get('SELECT * FROM demographic_questions WHERE id = ?', [questionId]);
+    res.json({ ...updated, options: updated.options ? JSON.parse(updated.options) : null });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;

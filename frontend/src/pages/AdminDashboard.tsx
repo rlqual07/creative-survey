@@ -9,7 +9,18 @@ interface Survey {
   title: string;
   description: string;
   consent_form: string;
+  intro_text?: string;
   status: string;
+}
+
+interface EditableQuestion {
+  id: string;
+  question_set: number;
+  question_number: number;
+  question_text: string;
+  question_type: string;
+  scale_max: number | null;
+  options: string[] | null;
 }
 
 interface StimulusBlock {
@@ -31,13 +42,18 @@ const AdminDashboard: React.FC = () => {
     title: '',
     description: '',
     consentForm: '',
+    introText: '',
   });
+  const [questions, setQuestions] = useState<EditableQuestion[]>([]);
+  const [demoQuestions, setDemoQuestions] = useState<EditableQuestion[]>([]);
+  const [showQuestions, setShowQuestions] = useState(false);
 
   // Form states
   const [surveyForm, setSurveyForm] = useState({
     title: '',
     description: '',
     consentForm: '',
+    introText: '',
   });
 
   const [blockForm, setBlockForm] = useState({
@@ -66,7 +82,7 @@ const AdminDashboard: React.FC = () => {
       const response = await axios.post(`${API_URL}/survey`, surveyForm);
       setSurveys([response.data, ...surveys]);
       setActiveSurvey(response.data);
-      setSurveyForm({ title: '', description: '', consentForm: '' });
+      setSurveyForm({ title: '', description: '', consentForm: '', introText: '' });
       setShowNewSurvey(false);
       alert('Survey created successfully!');
     } catch (error) {
@@ -81,6 +97,10 @@ const AdminDashboard: React.FC = () => {
     try {
       const response = await axios.get(`${API_URL}/questions/${survey.id}/blocks`);
       setBlocks(response.data);
+      const qs = await axios.get(`${API_URL}/questions/${survey.id}/questions`);
+      setQuestions(qs.data);
+      const dq = await axios.get(`${API_URL}/questions/${survey.id}/demographic-questions`);
+      setDemoQuestions(dq.data);
     } catch (error) {
       console.error('Error loading blocks:', error);
     }
@@ -111,6 +131,7 @@ const AdminDashboard: React.FC = () => {
       title: activeSurvey.title,
       description: activeSurvey.description || '',
       consentForm: activeSurvey.consent_form || '',
+      introText: activeSurvey.intro_text || '',
     });
     setEditingSurvey(true);
   };
@@ -169,6 +190,20 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
+  const handleSaveQuestion = async (q: EditableQuestion, isDemographic: boolean) => {
+    try {
+      const url = isDemographic
+        ? `${API_URL}/questions/demographic/${q.id}`
+        : `${API_URL}/questions/question/${q.id}`;
+      await axios.put(url, {
+        questionText: q.question_text,
+        options: q.options,
+      });
+    } catch (error: any) {
+      alert(error.response?.data?.error || 'Failed to save question');
+    }
+  };
+
   const handlePublishSurvey = async () => {
     if (!activeSurvey) return;
 
@@ -220,6 +255,16 @@ const AdminDashboard: React.FC = () => {
                 value={surveyForm.consentForm}
                 onChange={(e) => setSurveyForm({ ...surveyForm, consentForm: e.target.value })}
                 placeholder="Paste your consent form text here"
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Introduction / pre-read</label>
+              <textarea
+                rows={6}
+                value={surveyForm.introText}
+                onChange={(e) => setSurveyForm({ ...surveyForm, introText: e.target.value })}
+                placeholder="Shown on its own page after consent, before the first stimulus. Leave blank to skip."
               />
             </div>
 
@@ -278,6 +323,17 @@ const AdminDashboard: React.FC = () => {
                   onChange={(e) => setEditForm({ ...editForm, consentForm: e.target.value })}
                 />
               </div>
+
+              <div className="form-group">
+                <label>Introduction / pre-read</label>
+                <textarea
+                  rows={6}
+                  value={editForm.introText}
+                  onChange={(e) => setEditForm({ ...editForm, introText: e.target.value })}
+                  placeholder="Shown on its own page after consent, before the first stimulus. Leave blank to skip."
+                />
+              </div>
+
               <button type="submit" className="btn btn-success">Save changes</button>
               <button
                 type="button"
@@ -361,6 +417,84 @@ const AdminDashboard: React.FC = () => {
                 </div>
               ))}
             </div>
+          </div>
+
+          <div className="survey-section">
+            <h3>Questions ({questions.length} items in {new Set(questions.map((q) => q.question_set)).size} sets)</h3>
+            <p className="question-help">
+              These are asked after every stimulus. Edit the wording here; the
+              scale and answer options stay as configured.
+            </p>
+            <button className="btn btn-secondary" onClick={() => setShowQuestions(!showQuestions)}>
+              {showQuestions ? 'Hide questions' : 'Edit questions'}
+            </button>
+
+            {showQuestions && (
+              <div className="question-editor">
+                {[...new Set(questions.map((q) => q.question_set))].sort().map((setNo) => (
+                  <div key={setNo} className="question-set">
+                    <h4>Question set {setNo}</h4>
+                    {questions
+                      .filter((q) => q.question_set === setNo)
+                      .map((q) => (
+                        <div key={q.id} className="form-group">
+                          <label>
+                            {q.question_type === 'likert'
+                              ? `Statement ${q.question_number} (1-${q.scale_max} scale)`
+                              : 'Question'}
+                          </label>
+                          <textarea
+                            rows={2}
+                            value={q.question_text}
+                            onChange={(e) =>
+                              setQuestions(
+                                questions.map((x) =>
+                                  x.id === q.id ? { ...x, question_text: e.target.value } : x
+                                )
+                              )
+                            }
+                            onBlur={() => handleSaveQuestion(q, false)}
+                          />
+                          {q.options && (
+                            <ul className="option-list">
+                              {q.options.map((o) => (
+                                <li key={o}>{o}</li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
+                      ))}
+                  </div>
+                ))}
+
+                <h4>Demographic questions (asked once, at the end)</h4>
+                {demoQuestions.map((q) => (
+                  <div key={q.id} className="form-group">
+                    <label>Question {q.question_number}</label>
+                    <textarea
+                      rows={2}
+                      value={q.question_text}
+                      onChange={(e) =>
+                        setDemoQuestions(
+                          demoQuestions.map((x) =>
+                            x.id === q.id ? { ...x, question_text: e.target.value } : x
+                          )
+                        )
+                      }
+                      onBlur={() => handleSaveQuestion(q, true)}
+                    />
+                    {q.options && (
+                      <ul className="option-list">
+                        {q.options.map((o) => (
+                          <li key={o}>{o}</li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                ))}
+                <p className="question-help">Changes save when you click away from a field.</p>
+              </div>
+            )}
           </div>
 
           {activeSurvey.status === 'draft' ? (

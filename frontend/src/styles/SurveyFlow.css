@@ -139,3 +139,109 @@
   font-size: 1.1rem;
   margin-bottom: 2rem;
 }
+
+/* ---- Added: question sets, Likert grids, exit control ---- */
+
+.survey-progress {
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #eee;
+}
+
+.question-prompt {
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  line-height: 1.5;
+}
+
+.intro-text p,
+.consent-text p {
+  margin-bottom: 0.75rem;
+  line-height: 1.6;
+}
+
+.likert-row {
+  padding: 1rem 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.likert-statement {
+  margin-bottom: 0.75rem;
+  line-height: 1.5;
+}
+
+.likert-scale {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.likert-point {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  cursor: pointer;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  min-width: 44px;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+
+.likert-point:hover {
+  background-color: #f5f7fa;
+  border-color: #667eea;
+}
+
+.likert-point input {
+  cursor: pointer;
+}
+
+.choice-question {
+  padding: 1rem 0;
+}
+
+.choice-text {
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  line-height: 1.5;
+}
+
+.choice-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.6rem 0.75rem;
+  margin-bottom: 0.4rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  cursor: pointer;
+  line-height: 1.4;
+}
+
+.choice-option:hover {
+  background-color: #f5f7fa;
+  border-color: #667eea;
+}
+
+.survey-exit {
+  display: block;
+  margin-top: 2rem;
+  opacity: 0.75;
+}
+
+.stimulus-hint {
+  font-size: 0.85rem;
+  color: #666;
+  margin-top: 0.5rem;
+}
+
+@media (max-width: 600px) {
+  .likert-point {
+    min-width: 38px;
+    padding: 0.4rem 0.5rem;
+  }
+}
