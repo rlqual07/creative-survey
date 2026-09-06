@@ -162,16 +162,26 @@ const SurveyFlow: React.FC = () => {
       return;
     }
 
-    setStep(demographics.length > 0 ? 'demographics' : 'complete');
-    if (demographics.length === 0) await markComplete();
+    if (demographics.length > 0) {
+      setStep('demographics');
+      return;
+    }
+    if (await markComplete()) setStep('complete');
   };
 
   const markComplete = useCallback(async () => {
-    if (!participantId) return;
+    if (!participantId) return true;
     try {
       await axios.post(`${API_URL}/survey/participant/${participantId}/complete`);
-    } catch {
-      /* non-fatal: responses are already saved */
+      return true;
+    } catch (err: any) {
+      // The server refuses to mark a partial survey complete. Surface it rather
+      // than showing a thank-you page for a record that will not be kept.
+      setError(
+        err.response?.data?.error ||
+          'Your responses could not be submitted. Please contact the researcher.'
+      );
+      return false;
     }
   }, [participantId]);
 
@@ -188,8 +198,7 @@ const SurveyFlow: React.FC = () => {
           responseValue: demoAnswers[d.id],
         });
       }
-      await markComplete();
-      setStep('complete');
+      if (await markComplete()) setStep('complete');
     } catch (err: any) {
       setError(err.response?.data?.error || 'Could not save your answers.');
     } finally {
@@ -199,7 +208,7 @@ const SurveyFlow: React.FC = () => {
 
   const exitSurvey = async () => {
     const confirmed = window.confirm(
-      'Leave the survey?\n\nYour answers so far are kept, but the survey will be marked as incomplete. You cannot resume.'
+      'Leave the survey?\n\nYour answers will be permanently deleted and nothing will be recorded. You cannot resume.'
     );
     if (!confirmed) return;
 

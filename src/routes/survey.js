@@ -2,6 +2,10 @@ const express = require('express');
 const { v4: uuidv4 } = require('uuid');
 const { run, get, all } = require('../db');
 const { seedDefaultQuestions, SET_PROMPTS } = require('../defaultInstrument');
+const { generateSequences } = require('../latinSquare');
+
+// Unfinished sessions are cleared after this long, freeing their sequence slot.
+const STALE_SESSION_SECONDS = 2 * 60 * 60;
 
 const router = express.Router();
 
@@ -177,9 +181,6 @@ router.post('/:surveyId/start', async (req, res) => {
     const participantId = uuidv4();
     const sessionToken = uuidv4();
 
-    // Randomize over the blocks this survey actually has. Block IDs are stored
-    // rather than positional indices, so the recorded order stays interpretable
-    // even if blocks are later added, removed or reordered.
     const blocks = await all(
       'SELECT id FROM stimulus_blocks WHERE survey_id = ? ORDER BY block_order ASC',
       [surveyId]
@@ -191,15 +192,49 @@ router.post('/:surveyId/start', async (req, res) => {
         .json({ error: 'This survey has no stimulus blocks and cannot be started.' });
     }
 
-    const blockOrder = blocks.map((b) => b.id);
-    for (let i = blockOrder.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [blockOrder[i], blockOrder[j]] = [blockOrder[j], blockOrder[i]];
+    // Clear sessions abandoned without pressing Exit, so their sequence slot is
+    // returned to the pool. Cascade removes any partial responses.
+    await run(
+      `DELETE FROM participants
+       WHERE survey_id = ?
+         AND completed_at IS NULL
+         AND started_at < (EXTRACT(EPOCH FROM NOW())::bigint - ?)`,
+      [surveyId, STALE_SESSION_SECONDS]
+    );
+
+    // Balanced Latin square: every stimulus starts exactly once per cycle, and
+    // each stimulus follows every other equally often.
+    const sequences = generateSequences(blocks.length);
+
+    // Qualtrics-style "evenly present": take the least-used sequence, breaking
+    // ties at random. Because incomplete participants are deleted, the counts
+    // reflect only live and completed sessions, so balance self-corrects.
+    const counts = await all(
+      `SELECT sequence_index, COUNT(*)::int AS n
+       FROM participants
+       WHERE survey_id = ? AND sequence_index IS NOT NULL
+       GROUP BY sequence_index`,
+      [surveyId]
+    );
+
+    const used = new Array(sequences.length).fill(0);
+    for (const row of counts) {
+      if (row.sequence_index < used.length) used[row.sequence_index] = row.n;
     }
 
+    const lowest = Math.min(...used);
+    const candidates = used
+      .map((n, i) => (n === lowest ? i : -1))
+      .filter((i) => i !== -1);
+    const sequenceIndex = candidates[Math.floor(Math.random() * candidates.length)];
+
+    const blockOrder = sequences[sequenceIndex].map((pos) => blocks[pos].id);
+
     await run(
-      `INSERT INTO participants (id, survey_id, session_token, block_randomization) VALUES (?, ?, ?, ?)`,
-      [participantId, surveyId, sessionToken, JSON.stringify(blockOrder)]
+      `INSERT INTO participants
+         (id, survey_id, session_token, block_randomization, sequence_index)
+       VALUES (?, ?, ?, ?, ?)`,
+      [participantId, surveyId, sessionToken, JSON.stringify(blockOrder), sequenceIndex]
     );
 
     const participant = await get('SELECT * FROM participants WHERE id = ?', [participantId]);
@@ -209,8 +244,6 @@ router.post('/:surveyId/start', async (req, res) => {
   }
 });
 
-// Everything a participant needs in one call: survey, ordered blocks,
-// question template grouped into sets, and demographic questions.
 router.get('/:surveyId/instrument', async (req, res) => {
   try {
     const { surveyId } = req.params;
@@ -274,41 +307,81 @@ router.get('/:surveyId/instrument', async (req, res) => {
   }
 });
 
-// Mark a participant as having finished
+// Mark a participant as finished. Refuses unless every stimulus has a full set
+// of responses and every demographic question is answered, so partial records
+// can never be marked complete.
 router.post('/participant/:participantId/complete', async (req, res) => {
   try {
     const { participantId } = req.params;
-    const result = await run(
+
+    const participant = await get('SELECT * FROM participants WHERE id = ?', [participantId]);
+    if (!participant) return res.status(404).json({ error: 'Participant not found' });
+
+    const blocks = await all(
+      'SELECT id FROM stimulus_blocks WHERE survey_id = ?',
+      [participant.survey_id]
+    );
+    const questions = await all(
+      'SELECT id FROM questions WHERE survey_id = ?',
+      [participant.survey_id]
+    );
+    const demographics = await all(
+      'SELECT id FROM demographic_questions WHERE survey_id = ?',
+      [participant.survey_id]
+    );
+
+    const expected = blocks.length * questions.length;
+    const got = await get(
+      'SELECT COUNT(*)::int AS n FROM responses WHERE participant_id = ?',
+      [participantId]
+    );
+    const gotDemo = await get(
+      'SELECT COUNT(*)::int AS n FROM demographic_responses WHERE participant_id = ?',
+      [participantId]
+    );
+
+    if (got.n < expected || gotDemo.n < demographics.length) {
+      return res.status(400).json({
+        error: 'Survey is not complete.',
+        expectedResponses: expected,
+        actualResponses: got.n,
+        expectedDemographics: demographics.length,
+        actualDemographics: gotDemo.n,
+      });
+    }
+
+    await run(
       `UPDATE participants
-       SET completed_at = strftime('%s', 'now'), status = 'completed'
+       SET completed_at = EXTRACT(EPOCH FROM NOW())::bigint,
+           status = 'completed',
+           duration_seconds = EXTRACT(EPOCH FROM NOW())::bigint - started_at
        WHERE id = ?`,
       [participantId]
     );
-    if (result.changes === 0) {
-      return res.status(404).json({ error: 'Participant not found' });
-    }
-    const participant = await get('SELECT * FROM participants WHERE id = ?', [participantId]);
-    res.json(participant);
+
+    const updated = await get('SELECT * FROM participants WHERE id = ?', [participantId]);
+    res.json(updated);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// Mark a participant as having exited early. Partial responses are retained.
+// Exit before finishing: the participant row is deleted outright, and cascade
+// removes any partial responses. Only complete records are retained, and the
+// sequence slot returns to the pool for the next participant.
 router.post('/participant/:participantId/abandon', async (req, res) => {
   try {
     const { participantId } = req.params;
     const result = await run(
-      `UPDATE participants
-       SET status = 'abandoned', abandoned_at = strftime('%s', 'now')
-       WHERE id = ? AND completed_at IS NULL`,
+      'DELETE FROM participants WHERE id = ? AND completed_at IS NULL',
       [participantId]
     );
     if (result.changes === 0) {
-      return res.status(404).json({ error: 'Participant not found or already complete' });
+      return res
+        .status(404)
+        .json({ error: 'Participant not found or already complete' });
     }
-    const participant = await get('SELECT * FROM participants WHERE id = ?', [participantId]);
-    res.json(participant);
+    res.json({ deleted: true });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
