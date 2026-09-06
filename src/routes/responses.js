@@ -91,9 +91,28 @@ router.get('/survey/:surveyId/results', async (req, res) => {
 
     const participants = await all('SELECT * FROM participants WHERE survey_id = ?', [surveyId]);
     const completedCount = participants.filter((p) => p.completed_at).length;
-    const abandonedCount = participants.filter(
-      (p) => p.status === 'abandoned'
-    ).length;
+    const inProgressCount = participants.filter((p) => !p.completed_at).length;
+
+    // Duration stats over completed participants only.
+    const durations = participants
+      .filter((p) => p.duration_seconds != null)
+      .map((p) => p.duration_seconds)
+      .sort((a, b) => a - b);
+    const median =
+      durations.length === 0
+        ? null
+        : durations.length % 2
+        ? durations[(durations.length - 1) / 2]
+        : Math.round(
+            (durations[durations.length / 2 - 1] + durations[durations.length / 2]) / 2
+          );
+
+    // How evenly the counterbalanced sequences are filling up.
+    const bySequence = {};
+    for (const p of participants) {
+      if (p.sequence_index == null || !p.completed_at) continue;
+      bySequence[p.sequence_index] = (bySequence[p.sequence_index] || 0) + 1;
+    }
     const responses = await all(
       `SELECT r.* FROM responses r 
        JOIN participants p ON r.participant_id = p.id 
@@ -104,7 +123,12 @@ router.get('/survey/:surveyId/results', async (req, res) => {
     res.json({
       totalParticipants: participants.length,
       completedParticipants: completedCount,
-      abandonedParticipants: abandonedCount,
+      inProgressParticipants: inProgressCount,
+      medianDurationSeconds: median,
+      meanDurationSeconds: durations.length
+        ? Math.round(durations.reduce((a, b) => a + b, 0) / durations.length)
+        : null,
+      completedBySequence: bySequence,
       completionRate: participants.length > 0 ? ((completedCount / participants.length) * 100).toFixed(1) : 0,
       totalResponses: responses.length,
     });

@@ -178,6 +178,8 @@ const initialize = async () => {
       `ALTER TABLE responses ADD COLUMN IF NOT EXISTS block_id TEXT`,
       `ALTER TABLE responses ADD COLUMN IF NOT EXISTS block_position INTEGER`,
       `ALTER TABLE questions ALTER COLUMN block_id DROP NOT NULL`,
+      `ALTER TABLE participants ADD COLUMN IF NOT EXISTS sequence_index INTEGER`,
+      `ALTER TABLE participants ADD COLUMN IF NOT EXISTS duration_seconds INTEGER`,
     ];
     for (const sql of migrations) {
       try {
