@@ -26,6 +26,12 @@ const AdminDashboard: React.FC = () => {
   const [showNewSurvey, setShowNewSurvey] = useState(false);
   const [showAddBlock, setShowAddBlock] = useState(false);
   const [blocks, setBlocks] = useState<StimulusBlock[]>([]);
+  const [editingSurvey, setEditingSurvey] = useState(false);
+  const [editForm, setEditForm] = useState({
+    title: '',
+    description: '',
+    consentForm: '',
+  });
 
   // Form states
   const [surveyForm, setSurveyForm] = useState({
@@ -35,7 +41,6 @@ const AdminDashboard: React.FC = () => {
   });
 
   const [blockForm, setBlockForm] = useState({
-    blockOrder: 1,
     stimulusType: 'image',
     stimulusUrl: '',
     stimulusTitle: '',
@@ -89,15 +94,78 @@ const AdminDashboard: React.FC = () => {
       const response = await axios.post(`${API_URL}/questions/${activeSurvey.id}/blocks`, blockForm);
       setBlocks([...blocks, response.data]);
       setBlockForm({
-        blockOrder: blockForm.blockOrder + 1,
         stimulusType: 'image',
         stimulusUrl: '',
         stimulusTitle: '',
       });
-      alert('Stimulus block added successfully!');
-    } catch (error) {
+      setShowAddBlock(false);
+    } catch (error: any) {
       console.error('Error adding block:', error);
-      alert('Failed to add block');
+      alert(error.response?.data?.error || 'Failed to add block');
+    }
+  };
+
+  const handleStartEdit = () => {
+    if (!activeSurvey) return;
+    setEditForm({
+      title: activeSurvey.title,
+      description: activeSurvey.description || '',
+      consentForm: activeSurvey.consent_form || '',
+    });
+    setEditingSurvey(true);
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeSurvey) return;
+    try {
+      const response = await axios.put(`${API_URL}/survey/${activeSurvey.id}`, editForm);
+      setActiveSurvey(response.data);
+      setSurveys(surveys.map((s) => (s.id === response.data.id ? response.data : s)));
+      setEditingSurvey(false);
+    } catch (error: any) {
+      alert(error.response?.data?.error || 'Failed to save changes');
+    }
+  };
+
+  const handleDeleteSurvey = async () => {
+    if (!activeSurvey) return;
+    const confirmed = window.confirm(
+      `Delete "${activeSurvey.title}"?\n\nThis permanently removes the survey, its stimulus blocks, and ALL collected responses. This cannot be undone.`
+    );
+    if (!confirmed) return;
+
+    try {
+      await axios.delete(`${API_URL}/survey/${activeSurvey.id}`);
+      setSurveys(surveys.filter((s) => s.id !== activeSurvey.id));
+      setActiveSurvey(null);
+      setBlocks([]);
+    } catch (error: any) {
+      alert(error.response?.data?.error || 'Failed to delete survey');
+    }
+  };
+
+  const handleDeleteBlock = async (block: StimulusBlock) => {
+    const label = block.stimulus_title || `Block ${block.block_order}`;
+    if (!window.confirm(`Remove "${label}"?`)) return;
+
+    try {
+      await axios.delete(`${API_URL}/questions/blocks/${block.id}`);
+      const response = await axios.get(`${API_URL}/questions/${activeSurvey!.id}/blocks`);
+      setBlocks(response.data);
+    } catch (error: any) {
+      alert(error.response?.data?.error || 'Failed to remove stimulus block');
+    }
+  };
+
+  const handleUnpublishSurvey = async () => {
+    if (!activeSurvey) return;
+    try {
+      const response = await axios.put(`${API_URL}/survey/${activeSurvey.id}/unpublish`);
+      setActiveSurvey(response.data);
+      setSurveys(surveys.map((s) => (s.id === response.data.id ? response.data : s)));
+    } catch (error: any) {
+      alert(error.response?.data?.error || 'Failed to unpublish');
     }
   };
 
@@ -109,9 +177,9 @@ const AdminDashboard: React.FC = () => {
       setActiveSurvey(response.data);
       setSurveys(surveys.map(s => s.id === response.data.id ? response.data : s));
       alert('Survey published successfully!');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error publishing survey:', error);
-      alert('Failed to publish survey');
+      alert(error.response?.data?.error || 'Failed to publish survey');
     }
   };
 
@@ -183,30 +251,63 @@ const AdminDashboard: React.FC = () => {
 
       {activeSurvey && (
         <div className="card">
-          <h2>Edit: {activeSurvey.title}</h2>
-          <p>Status: <strong>{activeSurvey.status}</strong></p>
+          {editingSurvey ? (
+            <form onSubmit={handleSaveEdit} className="survey-form">
+              <h2>Edit survey details</h2>
+              <div className="form-group">
+                <label>Survey Title *</label>
+                <input
+                  type="text"
+                  required
+                  value={editForm.title}
+                  onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                />
+              </div>
+              <div className="form-group">
+                <label>Description</label>
+                <textarea
+                  value={editForm.description}
+                  onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                />
+              </div>
+              <div className="form-group">
+                <label>Consent Form *</label>
+                <textarea
+                  required
+                  value={editForm.consentForm}
+                  onChange={(e) => setEditForm({ ...editForm, consentForm: e.target.value })}
+                />
+              </div>
+              <button type="submit" className="btn btn-success">Save changes</button>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setEditingSurvey(false)}
+              >
+                Cancel
+              </button>
+            </form>
+          ) : (
+            <>
+              <h2>{activeSurvey.title}</h2>
+              <p>Status: <strong>{activeSurvey.status}</strong></p>
+              <button className="btn btn-secondary" onClick={handleStartEdit}>
+                Edit details
+              </button>
+              <button className="btn btn-danger" onClick={handleDeleteSurvey}>
+                Delete survey
+              </button>
+            </>
+          )}
 
           <div className="survey-section">
-            <h3>Stimulus Blocks ({blocks.length}/4)</h3>
+            <h3>Stimulus Blocks ({blocks.length})</h3>
             <button className="btn btn-primary" onClick={() => setShowAddBlock(!showAddBlock)}>
               {showAddBlock ? 'Cancel' : 'Add Stimulus Block'}
             </button>
 
             {showAddBlock && (
               <form onSubmit={handleAddBlock} className="block-form">
-                <div className="form-group">
-                  <label>Block Order</label>
-                  <select
-                    value={blockForm.blockOrder}
-                    onChange={(e) => setBlockForm({ ...blockForm, blockOrder: parseInt(e.target.value) })}
-                  >
-                    <option value="1">Block 1</option>
-                    <option value="2">Block 2</option>
-                    <option value="3">Block 3</option>
-                    <option value="4">Block 4</option>
-                  </select>
-                </div>
-
                 <div className="form-group">
                   <label>Stimulus Type</label>
                   <select
@@ -248,17 +349,33 @@ const AdminDashboard: React.FC = () => {
             <div className="blocks-list">
               {blocks.map((block) => (
                 <div key={block.id} className="block-item">
-                  <h4>{block.stimulus_title || `Block ${block.block_order}`}</h4>
+                  <h4>{block.block_order}. {block.stimulus_title || `Block ${block.block_order}`}</h4>
                   <p>Type: {block.stimulus_type}</p>
                   <a href={block.stimulus_url} target="_blank" rel="noopener noreferrer">View Stimulus</a>
+                  <button
+                    className="btn btn-danger btn-small"
+                    onClick={() => handleDeleteBlock(block)}
+                  >
+                    Remove
+                  </button>
                 </div>
               ))}
             </div>
           </div>
 
-          {activeSurvey.status === 'draft' && blocks.length === 4 && (
-            <button className="btn btn-success" onClick={handlePublishSurvey}>
-              Publish Survey
+          {activeSurvey.status === 'draft' ? (
+            blocks.length > 0 ? (
+              <button className="btn btn-success" onClick={handlePublishSurvey}>
+                Publish Survey
+              </button>
+            ) : (
+              <p className="alert alert-info">
+                Add at least one stimulus block to publish this survey.
+              </p>
+            )
+          ) : (
+            <button className="btn btn-secondary" onClick={handleUnpublishSurvey}>
+              Unpublish (back to draft)
             </button>
           )}
         </div>

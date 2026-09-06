@@ -3,10 +3,10 @@
 A survey platform for stimulus-based research, with block randomization of
 stimulus presentation order.
 
-> **Before collecting real data, read [KNOWN_ISSUES.md](KNOWN_ISSUES.md).**
-> Responses are currently stored in SQLite on an ephemeral filesystem and will
-> be lost on redeploy. The platform is suitable for development and pilot
-> testing only until that is resolved.
+> **Requires a `DATABASE_URL`.** Data is stored in PostgreSQL. Create a free
+> database at [neon.com](https://neon.com) (no credit card, no expiry) and set
+> `DATABASE_URL` before running. See [KNOWN_ISSUES.md](KNOWN_ISSUES.md) for
+> current limitations — note that admin routes have no authentication.
 
 ## Features
 
@@ -23,7 +23,7 @@ is one service to deploy and no CORS configuration.
 
 ```
 server.js              Express entrypoint; serves /api and frontend/build
-src/db.js              SQLite connection, schema, promise helpers
+src/db.js              Postgres pool, schema, promise helpers
 src/routes/            survey.js, questions.js, responses.js
 frontend/              React 18 + TypeScript (Create React App)
   src/App.tsx          Router and navigation shell
@@ -40,10 +40,12 @@ reintroduce an absolute API URL.
 ## Requirements
 
 - Node.js 20 or later
+- A PostgreSQL database (free at [neon.com](https://neon.com))
 
 ## Local development
 
 ```bash
+cp .env.example .env  # then paste your DATABASE_URL into it
 npm install          # backend dependencies
 npm run build        # installs frontend deps and builds the React app
 npm start            # serves on http://localhost:5000

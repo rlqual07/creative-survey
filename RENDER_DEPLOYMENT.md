@@ -1,8 +1,8 @@
 # Deploy to Render (Free, No Credit Card)
 
-> **Before collecting real data:** responses are stored in SQLite on Render's
-> ephemeral filesystem and are destroyed on every deploy, restart, and cold
-> start. See [KNOWN_ISSUES.md](KNOWN_ISSUES.md) item 1. Pilot testing only.
+> **You must set up a database first.** Data is stored in PostgreSQL, not on
+> Render's disk. Follow Step 0 below before deploying, or the app will start but
+> every request will fail.
 
 
 
@@ -13,6 +13,23 @@ Render's free tier **does NOT require a credit card**. You can sign up, deploy, 
 ---
 
 ## Deploy in 10 Minutes (All in Browser)
+
+### Step 0: Create a free Postgres database (3 min)
+
+Render's own free Postgres expires after 30 days and is then deleted, so we use
+Neon instead — its free plan has no expiry and needs no credit card.
+
+1. Go to https://neon.com and sign up (GitHub login works).
+2. Create a project. Any name and region is fine; pick a region near your
+   participants for slightly faster responses.
+3. On the project dashboard, find the **connection string**. It looks like:
+   `postgresql://user:password@ep-xxx.region.aws.neon.tech/dbname?sslmode=require`
+4. Copy it. You will paste it into Render in Step 4.
+
+**Treat this string as a password.** It grants full access to your data. Do not
+commit it to GitHub or paste it into a public document.
+
+---
 
 ### Step 1: Fork Your Repository (2 min)
 
@@ -156,7 +173,7 @@ See:
 ✅ **Completely Free** - No credit card ever needed  
 ✅ **750 Compute Hours/Month** - Plenty for surveys  
 ✅ **Auto-Deploy from GitHub** - Changes auto-deploy  
-✅ **SQLite Database** - Data stored on your app  
+✅ **PostgreSQL Database** - Data stored in Neon, separate from the app  
 ✅ **Block Randomization** - Automatic shuffling  
 ✅ **Mobile Friendly** - Works on any device  
 ✅ **Browser Only** - Deploy entirely in browser  
@@ -195,7 +212,7 @@ If you want to update your code:
 **A:** Click "Manual Deploy" in Render dashboard → "Latest Commit"
 
 ### Q: How do I access my database?
-**A:** SQLite database is `survey.db` on the server. Data persists across restarts.
+**A:** Data lives in your Neon Postgres database, not on Render's disk, so it survives redeploys, restarts, and cold starts.
 
 ### Q: Can I export survey data?
 **A:** Yes! Coming soon in the results dashboard (CSV export).
@@ -228,3 +245,18 @@ If you want to update your code:
 - ✅ Professional results dashboard
 
 **Next:** Start with Step 1 above! 🚀
+
+
+---
+
+## Setting DATABASE_URL on Render
+
+After creating the web service:
+
+1. Open the service, go to the **Environment** tab.
+2. Add an environment variable:
+   - Key: `DATABASE_URL`
+   - Value: the Neon connection string from Step 0
+3. Save. Render redeploys automatically.
+
+Without this the app starts, but every database request fails.
